@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>قسم التخطيط والمتابعة — مصفى موصل الغازي</title>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
+
+:root {
+  --primary: #1a3a5c;
+  --primary-light: #2563a8;
+  --accent: #d4a017;
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.1);
+  --text: #1a2436;
+  --text-muted: #5a6a7e;
+  --sidebar-w: 230px;
+  --header-h: 62px;
+  --danger: #c0392b;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--primary);
+  height: var(--header-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  position: sticky; top: 0; z-index: 100;
+  border-bottom: 3px solid var(--accent);
+  flex-shrink: 0;
+}
+.header-logo { display:flex; align-items:center; gap:12px; color:#fff; }
+.header-logo .emblem {
+  width:40px; height:40px; border-radius:8px;
+  background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px; font-weight:700; color:var(--primary);
+}
+.header-logo h1 { font-size:15px; font-weight:700; line-height:1.3; }
+.header-logo span { font-size:11px; color:rgba(255,255,255,0.6); }
+.header-right { display:flex; align-items:center; gap:12px; }
+.date-display { color:rgba(255,255,255,0.7); font-size:12px; }
+.online-badge {
+  background:rgba(46,213,115,0.2); border:1px solid rgba(46,213,115,0.5);
+  color:#2ed573; font-size:11px; padding:3px 10px; border-radius:20px;
+  display:flex; align-items:center; gap:5px;
+}
+.online-dot { width:7px; height:7px; border-radius:50%; background:#2ed573; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── LAYOUT ── */
+.layout { display:flex; flex:1; min-height:0; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--primary);
+  position: sticky; top: var(--header-h);
+  height: calc(100vh - var(--header-h));
+  overflow-y: auto; flex-shrink: 0;
+  padding: 14px 0;
+}
+.sidebar-label {
+  font-size:10px; color:rgba(255,255,255,0.3);
+  text-transform:uppercase; letter-spacing:1px;
+  padding:8px 16px 4px; font-weight:600;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:10px 16px; cursor:pointer;
+  color:rgba(255,255,255,0.72); font-size:13.5px; font-weight:500;
+  transition:all 0.2s; border-right:3px solid transparent;
+}
+.nav-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
+.nav-item.active { background:rgba(255,255,255,0.13); color:#fff; border-right-color:var(--accent); }
+.nav-item .icon {
+  width:28px; height:28px; border-radius:6px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; flex-shrink:0;
+}
+.nav-item.active .icon { background:var(--accent); color:var(--primary); }
+.divider { height:0.5px; background:rgba(255,255,255,0.1); margin:6px 0; }
+
+/* ── MAIN ── */
+.main { flex:1; padding:24px; overflow-y:auto; }
+
+/* ── PAGE ── */
+.page { display:none; }
+.page.active { display:block; animation:fadeIn 0.25s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.page-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:22px; flex-wrap:wrap; gap:12px;
+}
+.page-title { display:flex; align-items:center; gap:12px; }
+.page-title .icon-big {
+  width:46px; height:46px; border-radius:12px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; background:var(--primary); color:var(--accent);
+}
+.page-title h2 { font-size:20px; font-weight:700; }
+.page-title p { font-size:12px; color:var(--text-muted); margin-top:2px; }
+
+/* ── BUTTONS ── */
+.btn {
+  padding:8px 18px; border-radius:8px; border:none;
+  cursor:pointer; font-family:'Cairo',sans-serif;
+  font-size:13px; font-weight:600; transition:all 0.2s;
+}
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:var(--primary-light); }
+.btn-outline { background:transparent; border:0.5px solid var(--border); color:var(--text); }
+.btn-outline:hover { background:var(--bg); }
+.btn-accent { background:var(--accent); color:var(--primary); }
+.btn-danger { background:var(--danger); color:#fff; }
+.btn-sm { padding:5px 12px; font-size:12px; }
+
+/* ── STATS ── */
+.stats-row {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr));
+  gap:12px; margin-bottom:22px;
+}
+.stat-card {
+  background:var(--surface); border:0.5px solid var(--border);
+  border-radius:10px; padding:16px; text-align:center;
+}
+.stat-num { font-size:26px; font-weight:700; color:var(--primary); }
+.stat-label { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+/* ── CARDS GRID ── */
+.cards-grid {
+  display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:14px; margin-bottom:22px;
+}
+.card {
+  background:var(--surface); border:0.5px solid var(--border);
+  border-radius:12px; padding:18px;
+  cursor:pointer; transition:all 0.2s;
+}
+.card:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(0,0,0,0.08); }
+.card-header { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+.card-icon { width:38px; height:38px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:18px; }
+.card h3 { font-size:14px; font-weight:600; }
+.card p { font-size:12px; color:var(--text-muted); margin-top:3px; }
+.card-footer {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:12px; padding-top:10px; border-top:0.5px solid var(--border);
+}
+
+/* ── BADGES ── */
+.badge { font-size:11px; padding:3px 10px; border-radius:20px; font-weight:500; }
+.badge-blue   { background:#e6f1fb; color:#185fa5; }
+.badge-green  { background:#eaf3de; color:#3b6d11; }
+.badge-amber  { background:#faeeda; color:#854f0b; }
+.badge-purple { background:#eeedfe; color:#534ab7; }
+.badge-red    { background:#fcebeb; color:#a32d2d; }
+.badge-gray   { background:#f1efe8; color:#5f5e5a; }
+
+/* ── TABLE ── */
+.table-wrap {
+  background:var(--surface); border-radius:12px;
+  border:0.5px solid var(--border); overflow:hidden; margin-bottom:22px;
+}
+.table-head {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:14px 18px; border-bottom:0.5px solid var(--border);
+}
+.table-head h3 { font-size:14px; font-weight:600; }
+table { width:100%; border-collapse:collapse; }
+th {
+  background:#f8f9fa; font-size:12px; font-weight:600;
+  color:var(--text-muted); padding:10px 14px;
+  text-align:right; border-bottom:0.5px solid var(--border);
+}
+td { padding:10px 14px; font-size:13px; border-bottom:0.5px solid var(--border); vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#fafbfc; }
+
+/* ── TASKS ── */
+.task-item {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 16px; border-bottom:0.5px solid var(--border);
+}
+.task-item:last-child { border-bottom:none; }
+.task-check {
+  width:20px; height:20px; border-radius:50%;
+  border:2px solid var(--border); flex-shrink:0;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:11px; transition:all 0.2s;
+}
+.task-check.done { background:#3b6d11; border-color:#3b6d11; color:#fff; }
+.task-text { flex:1; font-size:13px; }
+.task-text.done { text-decoration:line-through; color:var(--text-muted); }
+.task-meta { font-size:11px; color:var(--text-muted); white-space:nowrap; }
+.priority-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.55);
+  z-index:200; display:none; align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border-radius:16px; padding:26px;
+  width:560px; max-width:95vw; max-height:88vh; overflow-y:auto;
+}
+.modal h3 { font-size:17px; font-weight:700; margin-bottom:18px; }
+.form-group { margin-bottom:14px; }
+.form-group label { display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--text-muted); }
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width:100%; padding:9px 12px;
+  border:0.5px solid var(--border); border-radius:8px;
+  font-family:'Cairo',sans-serif; font-size:13px;
+  color:var(--text); background:var(--bg); outline:none;
+  transition:border-color 0.2s;
+}
+.form-group input:focus,
+.form-group textarea:focus { border-color:var(--primary-light); }
+.form-group textarea { resize:vertical; min-height:80px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.modal-actions { display:flex; gap:10px; justify-content:flex-end; margin-top:18px; }
+
+/* ── SECTION TITLE ── */
+.section-title {
+  font-size:13px; font-weight:600; color:var(--text-muted);
+  margin-bottom:12px; margin-top:4px;
+  display:flex; align-items:center; gap:8px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── ARCHIVE SEARCH ── */
+.search-box {
+  background:var(--surface); border:0.5px solid var(--border);
+  border-radius:12px; padding:20px; margin-bottom:18px;
+}
+.search-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:12px; }
+.archive-result {
+  background:var(--surface); border:0.5px solid var(--border);
+  border-radius:10px; padding:15px; margin-bottom:10px;
+  display:flex; align-items:flex-start; gap:14px;
+  transition:all 0.2s;
+}
+.archive-result:hover { border-color:var(--primary-light); }
+.archive-icon {
+  width:40px; height:40px; border-radius:8px; background:#e6f1fb;
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; flex-shrink:0;
+}
+.archive-info { flex:1; }
+.archive-info h4 { font-size:13px; font-weight:600; margin-bottom:4px; }
+.archive-info p { font-size:12px; color:var(--text-muted); line-height:1.6; }
+.archive-meta { display:flex; gap:6px; flex-wrap:wrap; margin-top:7px; }
+.arch-num { font-size:14px; font-weight:700; color:var(--primary); white-space:nowrap; }
+
+/* ── PROGRESS ── */
+.progress-wrap { background:var(--bg); border-radius:20px; height:6px; overflow:hidden; margin-top:8px; }
+.progress-fill { height:100%; border-radius:20px; transition:width 0.5s; }
+
+/* ── LOADING ── */
+.loading-spinner {
+  text-align:center; padding:30px;
+  color:var(--text-muted); font-size:13px;
+}
+.spinner {
+  width:28px; height:28px; border:3px solid var(--border);
+  border-top-color:var(--primary); border-radius:50%;
+  animation:spin 0.8s linear infinite; margin:0 auto 10px;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:24px; left:50%;
+  transform:translateX(-50%) translateY(80px);
+  background:var(--primary); color:#fff;
+  padding:10px 24px; border-radius:30px;
+  font-size:13px; font-weight:500; z-index:999;
+  transition:transform 0.3s ease; pointer-events:none;
+}
+.toast.show { transform:translateX(-50%) translateY(0); }
+.toast.success { background:#27ae60; }
+.toast.error { background:var(--danger); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align:center; padding:36px 20px;
+  color:var(--text-muted); font-size:13px;
+}
+.empty-state .empty-icon { font-size:36px; margin-bottom:10px; }
+
+/* ── SETUP STEPS ── */
+.step { display:flex; gap:14px; align-items:flex-start; margin-bottom:16px; }
+.step-num {
+  width:28px; height:28px; border-radius:50%; background:var(--primary);
+  color:#fff; display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; flex-shrink:0;
+}
+.step strong { font-size:13px; display:block; }
+.step p { font-size:12px; color:var(--text-muted); margin-top:3px; line-height:1.6; }
+
+/* ── USER TAG ── */
+.user-tag {
+  font-size:11px; color:var(--text-muted);
+  background:var(--bg); border-radius:4px;
+  padding:2px 6px; border:0.5px solid var(--border);
+}
+
+/* ── FOLDER GRID ── */
+.folder-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; margin-bottom:18px; }
+.folder-item {
+  background:var(--surface); border:0.5px solid var(--border);
+  border-radius:10px; padding:14px; text-align:center;
+  cursor:pointer; transition:all 0.2s;
+}
+.folder-item:hover { border-color:var(--primary-light); transform:translateY(-2px); }
+.folder-item .fi { font-size:28px; margin-bottom:7px; }
+.folder-item span { font-size:13px; font-weight:600; display:block; }
+.folder-item small { font-size:11px; color:var(--text-muted); }
+
+/* USER DISPLAY */
+.user-display {
+  background:rgba(255,255,255,0.12); border-radius:8px;
+  padding:5px 10px; color:#fff; font-size:12px; cursor:pointer;
+  display:flex; align-items:center; gap:6px;
+}
+.user-avatar {
+  width:22px; height:22px; border-radius:50%; background:var(--accent);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:700; color:var(--primary);
+}
+
+@media(max-width:700px){
+  .sidebar{ width:52px; }
+  .nav-item span,.sidebar-label{ display:none; }
+  .main{ padding:14px; }
+  .search-grid{ grid-template-columns:1fr; }
+  .form-row{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════ HEADER ══════════ -->
+<div class="header">
+  <div class="header-logo">
+    <div class="emblem">ت</div>
+    <div>
+      <h1>قسم التخطيط والمتابعة</h1>
+      <span>مصفى موصل الغازي — البوابة الداخلية</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="date-display" id="dateDisplay"></div>
+    <div class="online-badge"><div class="online-dot"></div>متصل</div>
+    <div class="user-display" onclick="changeUser()">
+      <div class="user-avatar" id="userAvatar">؟</div>
+      <span id="currentUserName">تسجيل الدخول</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ LAYOUT ══════════ -->
+<div class="layout">
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-label">الرئيسية</div>
+  <div class="nav-item active" onclick="navigate('home')">
+    <div class="icon">🏠</div><span>لوحة التحكم</span>
+  </div>
+  <div class="divider"></div>
+  <div class="sidebar-label">الشعب</div>
+  <div class="nav-item" onclick="navigate('planning')">
+    <div class="icon">📋</div><span>شعبة التخطيط</span>
+  </div>
+  <div class="nav-item" onclick="navigate('followup')">
+    <div class="icon">🔍</div><span>شعبة المتابعة</span>
+  </div>
+  <div class="nav-item" onclick="navigate('maintenance')">
+    <div class="icon">🔧</div><span>برمجة الصيانة</span>
+  </div>
+  <div class="nav-item" onclick="navigate('stats')">
+    <div class="icon">📊</div><span>شعبة الإحصاء</span>
+  </div>
+  <div class="divider"></div>
+  <div class="sidebar-label">الخدمات</div>
+  <div class="nav-item" onclick="navigate('archive')">
+    <div class="icon">🗃️</div><span>الأرشفة الإلكترونية</span>
+  </div>
+  <div class="nav-item" onclick="navigate('drive')">
+    <div class="icon">☁️</div><span>Google Drive</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ══════════ HOME ══════════ -->
+<div id="page-home" class="page active">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big">🏛️</div>
+      <div><h2>لوحة التحكم</h2><p>نظرة عامة — البيانات مباشرة من Firebase</p></div>
+    </div>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-num" id="stat-tasks">—</div><div class="stat-label">مهام إجمالية</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-done">—</div><div class="stat-label">مهام منجزة</div></div>
+    <div class="stat-card"><div class="stat-num" id="stat-docs">—</div><div class="stat-label">وثائق مؤرشفة</div></div>
+    <div class="stat-card"><div class="stat-num">4</div><div class="stat-label">شعب نشطة</div></div>
+  </div>
+
+  <div class="section-title">الشعب الأربع</div>
+  <div class="cards-grid">
+    <div class="card" onclick="navigate('planning')">
+      <div class="card-header">
+        <div class="card-icon" style="background:#e6f1fb">📋</div>
+        <div><h3>شعبة التخطيط</h3><p>الخطط والمشاريع الاستراتيجية</p></div>
+      </div>
+      <div class="card-footer"><span class="badge badge-blue">نشطة</span><button class="btn btn-outline btn-sm">دخول</button></div>
+    </div>
+    <div class="card" onclick="navigate('followup')">
+      <div class="card-header">
+        <div class="card-icon" style="background:#eaf3de">🔍</div>
+        <div><h3>شعبة المتابعة</h3><p>متابعة تنفيذ القرارات والتوجيهات</p></div>
+      </div>
+      <div class="card-footer"><span class="badge badge-green">نشطة</span><button class="btn btn-outline btn-sm">دخول</button></div>
+    </div>
+    <div class="card" onclick="navigate('maintenance')">
+      <div class="card-header">
+        <div class="card-icon" style="background:#faeeda">🔧</div>
+        <div><h3>برمجة الصيانة</h3><p>جداول ومتابعة أعمال الصيانة</p></div>
+      </div>
+      <div class="card-footer"><span class="badge badge-amber">نشطة</span><button class="btn btn-outline btn-sm">دخول</button></div>
+    </div>
+    <div class="card" onclick="navigate('stats')">
+      <div class="card-header">
+        <div class="card-icon" style="background:#eeedfe">📊</div>
+        <div><h3>شعبة الإحصاء</h3><p>التقارير الإحصائية والبيانات</p></div>
+      </div>
+      <div class="card-footer"><span class="badge badge-purple">نشطة</span><button class="btn btn-outline btn-sm">دخول</button></div>
+    </div>
+  </div>
+
+  <div class="section-title">آخر الوثائق المضافة</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>رقم الكتاب</th><th>الموضوع</th><th>الشعبة</th><th>التاريخ</th><th>بواسطة</th><th>الحالة</th></tr></thead>
+      <tbody id="recent-docs-table">
+        <tr><td colspan="6"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════ BRANCH PAGES (Planning / Followup / Maintenance / Stats) ══════════ -->
+<!-- Template repeated for each branch -->
+
+<!-- PLANNING -->
+<div id="page-planning" class="page">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big" style="background:#e6f1fb;color:#185fa5">📋</div>
+      <div><h2>شعبة التخطيط</h2><p>الخطط والمشاريع الاستراتيجية</p></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openDocModal('planning')">📄 وثيقة جديدة</button>
+      <button class="btn btn-primary" onclick="openTaskModal('planning')">+ مهمة</button>
+    </div>
+  </div>
+  <div class="section-title">النماذج والوثائق</div>
+  <div class="cards-grid">
+    <div class="card" onclick="openDocForm('نموذج خطة تشغيلية','planning')">
+      <div class="card-header"><div class="card-icon" style="background:#e6f1fb">📄</div><div><h3>خطة تشغيلية</h3><p>إعداد الخطط السنوية والفصلية</p></div></div>
+      <div class="card-footer"><span class="badge badge-blue">نموذج</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('مذكرة داخلية','planning')">
+      <div class="card-header"><div class="card-icon" style="background:#eaf3de">📝</div><div><h3>مذكرة داخلية</h3><p>إنشاء وإرسال المذكرات</p></div></div>
+      <div class="card-footer"><span class="badge badge-green">مذكرة</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('كتاب رسمي صادر','planning')">
+      <div class="card-header"><div class="card-icon" style="background:#faeeda">📨</div><div><h3>كتاب رسمي صادر</h3><p>إعداد الكتب الرسمية الصادرة</p></div></div>
+      <div class="card-footer"><span class="badge badge-amber">كتاب</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('تقرير مرحلي','planning')">
+      <div class="card-header"><div class="card-icon" style="background:#eeedfe">📊</div><div><h3>تقرير مرحلي</h3><p>تقارير متابعة سير الخطط</p></div></div>
+      <div class="card-footer"><span class="badge badge-purple">تقرير</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+  </div>
+  <div class="section-title">جدول المهام</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>مهام الشعبة</h3><button class="btn btn-primary btn-sm" onclick="openTaskModal('planning')">+ مهمة جديدة</button></div>
+    <div id="tasks-planning"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+  <div class="section-title">وثائق الشعبة</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>الوثائق والكتب</h3></div>
+    <div id="docs-planning"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+</div>
+
+<!-- FOLLOWUP -->
+<div id="page-followup" class="page">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big" style="background:#eaf3de;color:#3b6d11">🔍</div>
+      <div><h2>شعبة المتابعة</h2><p>متابعة وتقييم تنفيذ القرارات</p></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openDocModal('followup')">📄 وثيقة جديدة</button>
+      <button class="btn btn-primary" onclick="openTaskModal('followup')">+ مهمة</button>
+    </div>
+  </div>
+  <div class="section-title">النماذج والوثائق</div>
+  <div class="cards-grid">
+    <div class="card" onclick="openDocForm('نموذج متابعة قرار','followup')">
+      <div class="card-header"><div class="card-icon" style="background:#eaf3de">📑</div><div><h3>متابعة قرار</h3><p>متابعة تنفيذ قرارات المسؤولين</p></div></div>
+      <div class="card-footer"><span class="badge badge-green">متابعة</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('تقرير متابعة دوري','followup')">
+      <div class="card-header"><div class="card-icon" style="background:#e6f1fb">📋</div><div><h3>تقرير متابعة دوري</h3><p>تقارير أسبوعية وشهرية</p></div></div>
+      <div class="card-footer"><span class="badge badge-blue">تقرير</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('ملاحظات ميدانية','followup')">
+      <div class="card-header"><div class="card-icon" style="background:#faeeda">🗒️</div><div><h3>ملاحظات ميدانية</h3><p>تسجيل الملاحظات الميدانية</p></div></div>
+      <div class="card-footer"><span class="badge badge-amber">ملاحظة</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('تقييم الأداء','followup')">
+      <div class="card-header"><div class="card-icon" style="background:#eeedfe">⭐</div><div><h3>تقييم الأداء</h3><p>نماذج تقييم الإنجاز</p></div></div>
+      <div class="card-footer"><span class="badge badge-purple">تقييم</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+  </div>
+  <div class="section-title">جدول المهام</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>مهام الشعبة</h3><button class="btn btn-primary btn-sm" onclick="openTaskModal('followup')">+ مهمة جديدة</button></div>
+    <div id="tasks-followup"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+  <div class="section-title">وثائق الشعبة</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>الوثائق والكتب</h3></div>
+    <div id="docs-followup"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+</div>
+
+<!-- MAINTENANCE -->
+<div id="page-maintenance" class="page">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big" style="background:#faeeda;color:#854f0b">🔧</div>
+      <div><h2>برمجة الصيانة</h2><p>إدارة وجدولة أعمال الصيانة</p></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openDocModal('maintenance')">📄 وثيقة جديدة</button>
+      <button class="btn btn-primary" onclick="openTaskModal('maintenance')">+ مهمة</button>
+    </div>
+  </div>
+  <div class="section-title">النماذج والوثائق</div>
+  <div class="cards-grid">
+    <div class="card" onclick="openDocForm('جدول صيانة دوري','maintenance')">
+      <div class="card-header"><div class="card-icon" style="background:#faeeda">📅</div><div><h3>جدول صيانة دوري</h3><p>برمجة أعمال الصيانة</p></div></div>
+      <div class="card-footer"><span class="badge badge-amber">جدول</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('أمر صيانة','maintenance')">
+      <div class="card-header"><div class="card-icon" style="background:#fcebeb">🛠️</div><div><h3>أمر صيانة</h3><p>إصدار أوامر الصيانة الطارئة</p></div></div>
+      <div class="card-footer"><span class="badge badge-red">أمر</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('تقرير إنجاز صيانة','maintenance')">
+      <div class="card-header"><div class="card-icon" style="background:#eaf3de">✅</div><div><h3>تقرير الإنجاز</h3><p>توثيق أعمال الصيانة المنجزة</p></div></div>
+      <div class="card-footer"><span class="badge badge-green">تقرير</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('طلب مستلزمات','maintenance')">
+      <div class="card-header"><div class="card-icon" style="background:#e6f1fb">📦</div><div><h3>طلب مستلزمات</h3><p>طلبات قطع الغيار والمواد</p></div></div>
+      <div class="card-footer"><span class="badge badge-blue">طلب</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+  </div>
+  <div class="section-title">جدول المهام</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>مهام الشعبة</h3><button class="btn btn-primary btn-sm" onclick="openTaskModal('maintenance')">+ مهمة جديدة</button></div>
+    <div id="tasks-maintenance"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+  <div class="section-title">وثائق الشعبة</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>الوثائق والكتب</h3></div>
+    <div id="docs-maintenance"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+</div>
+
+<!-- STATS -->
+<div id="page-stats" class="page">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big" style="background:#eeedfe;color:#534ab7">📊</div>
+      <div><h2>شعبة الإحصاء</h2><p>التقارير الإحصائية وتحليل البيانات</p></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline" onclick="openDocModal('stats')">📄 وثيقة جديدة</button>
+      <button class="btn btn-primary" onclick="openTaskModal('stats')">+ مهمة</button>
+    </div>
+  </div>
+  <div class="section-title">النماذج والتقارير الإحصائية</div>
+  <div class="cards-grid">
+    <div class="card" onclick="openDocForm('نموذج بيانات إحصائية','stats')">
+      <div class="card-header"><div class="card-icon" style="background:#eeedfe">📈</div><div><h3>بيانات إحصائية</h3><p>جمع وتوثيق البيانات</p></div></div>
+      <div class="card-footer"><span class="badge badge-purple">بيانات</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('تقرير إحصائي شهري','stats')">
+      <div class="card-header"><div class="card-icon" style="background:#e6f1fb">📉</div><div><h3>تقرير إحصائي شهري</h3><p>التقارير الدورية المجمعة</p></div></div>
+      <div class="card-footer"><span class="badge badge-blue">تقرير</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('تحليل مقارن','stats')">
+      <div class="card-header"><div class="card-icon" style="background:#eaf3de">🔬</div><div><h3>تحليل مقارن</h3><p>مقارنة المؤشرات بين الفترات</p></div></div>
+      <div class="card-footer"><span class="badge badge-green">تحليل</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+    <div class="card" onclick="openDocForm('ملخص إحصائي سنوي','stats')">
+      <div class="card-header"><div class="card-icon" style="background:#faeeda">📚</div><div><h3>ملخص سنوي</h3><p>التقارير الإحصائية السنوية</p></div></div>
+      <div class="card-footer"><span class="badge badge-amber">سنوي</span><button class="btn btn-outline btn-sm">فتح</button></div>
+    </div>
+  </div>
+  <div class="section-title">جدول المهام</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>مهام الشعبة</h3><button class="btn btn-primary btn-sm" onclick="openTaskModal('stats')">+ مهمة جديدة</button></div>
+    <div id="tasks-stats"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+  <div class="section-title">وثائق الشعبة</div>
+  <div class="table-wrap">
+    <div class="table-head"><h3>الوثائق والكتب</h3></div>
+    <div id="docs-stats"><div class="loading-spinner"><div class="spinner"></div>جاري التحميل...</div></div>
+  </div>
+</div>
+
+<!-- ══════════ ARCHIVE ══════════ -->
+<div id="page-archive" class="page">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big">🗃️</div>
+      <div><h2>الأرشفة الإلكترونية</h2><p>البحث في جميع الكتب والوثائق</p></div>
+    </div>
+    <button class="btn btn-primary" onclick="openAddArchiveModal()">+ أرشفة وثيقة</button>
+  </div>
+
+  <div class="search-box">
+    <h3 style="font-size:14px;font-weight:600;margin-bottom:14px">🔎 البحث في الأرشيف</h3>
+    <div class="search-grid">
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:5px">رقم الكتاب</label>
+        <input type="text" id="searchNum" placeholder="مثال: 2025/147" style="width:100%;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:5px">السنة</label>
+        <select id="searchYear" style="width:100%;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)">
+          <option value="">كل السنوات</option>
+          <option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:5px">الشعبة</label>
+        <select id="searchDept" style="width:100%;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)">
+          <option value="">كل الشعب</option>
+          <option>التخطيط</option><option>المتابعة</option><option>برمجة الصيانة</option><option>الإحصاء</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:5px">البحث بالنص المتضمن في الكتاب</label>
+      <input type="text" id="searchText" placeholder="ادخل كلمات من موضوع الكتاب أو محتواه..." style="width:100%;padding:9px 12px;border:0.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)">
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-primary" onclick="searchArchive()">🔍 بحث</button>
+      <button class="btn btn-outline" onclick="clearSearch()">مسح</button>
+      <span id="searchResultsCount" style="font-size:12px;color:var(--text-muted);margin-right:auto"></span>
+    </div>
+  </div>
+
+  <div class="section-title">تصفح حسب السنة</div>
+  <div class="folder-grid" id="yearFolders">
+    <div class="folder-item" onclick="filterYear('2026')"><div class="fi">📁</div><span>2026</span><small id="count-2026">—</small></div>
+    <div class="folder-item" onclick="filterYear('2025')"><div class="fi">📁</div><span>2025</span><small id="count-2025">—</small></div>
+    <div class="folder-item" onclick="filterYear('2024')"><div class="fi">📁</div><span>2024</span><small id="count-2024">—</small></div>
+    <div class="folder-item" onclick="filterYear('2023')"><div class="fi">📁</div><span>2023</span><small id="count-2023">—</small></div>
+    <div class="folder-item" onclick="filterYear('2022')"><div class="fi">📁</div><span>2022</span><small id="count-2022">—</small></div>
+  </div>
+
+  <div id="archiveResults"><div class="loading-spinner"><div class="spinner"></div>جاري تحميل الأرشيف...</div></div>
+</div>
+
+<!-- ══════════ DRIVE ══════════ -->
+<div id="page-drive" class="page">
+  <div class="page-header">
+    <div class="page-title">
+      <div class="icon-big">☁️</div>
+      <div><h2>Google Drive</h2><p>ربط وإدارة ملفات القسم</p></div>
+    </div>
+  </div>
+  <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:26px;margin-bottom:18px;text-align:center">
+    <div style="font-size:52px;margin-bottom:14px">☁️</div>
+    <h3 style="font-size:17px;font-weight:700;margin-bottom:8px">ربط Google Drive</h3>
+    <p style="font-size:13px;color:var(--text-muted);line-height:1.8;margin-bottom:22px">
+      اربط حساب Google Drive الخاص بالقسم للوصول المباشر<br>
+      إلى الكتب والوثائق المؤرشفة والبحث فيها.<br><br>
+      <strong>هيكل المجلدات المطلوب:</strong><br>
+      📁 التخطيط والمتابعة — مصفى موصل الغازي<br>
+      &nbsp;&nbsp;└── 📁 2022 &nbsp;└── 📁 2023 &nbsp;└── 📁 2024 &nbsp;└── 📁 2025 &nbsp;└── 📁 2026
+    </p>
+    <button class="btn btn-accent" style="font-size:15px;padding:12px 32px" onclick="showToast('يرجى إعداد Google OAuth API في مشروع Firebase أولاً','error')">🔗 ربط Google Drive</button>
+  </div>
+  <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:12px;padding:20px">
+    <div class="section-title">خطوات الإعداد</div>
+    <div class="step"><div class="step-num">1</div><div><strong>إنشاء مجلد رئيسي</strong><p>أنشئ مجلداً باسم "التخطيط والمتابعة — مصفى موصل الغازي" في Google Drive</p></div></div>
+    <div class="step"><div class="step-num">2</div><div><strong>إنشاء مجلدات السنوات</strong><p>أنشئ مجلدات فرعية: 2022، 2023، 2024، 2025، 2026</p></div></div>
+    <div class="step"><div class="step-num">3</div><div><strong>تنظيم الملفات</strong><p>ارفع الكتب والوثائق في المجلدات المناسبة حسب سنتها</p></div></div>
+    <div class="step"><div class="step-num">4</div><div><strong>مشاركة الرابط</strong><p>شارك رابط المجلد الرئيسي مع جميع موظفي القسم بصلاحية القراءة أو التحرير</p></div></div>
+  </div>
+</div>
+
+</main>
+</div><!-- end layout -->
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- USER LOGIN -->
+<div class="modal-overlay open" id="loginModal">
+  <div class="modal" style="width:400px;text-align:center">
+    <div style="font-size:42px;margin-bottom:12px">👤</div>
+    <h3 style="margin-bottom:6px">مرحباً بك</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px">يرجى إدخال اسمك للمتابعة</p>
+    <div class="form-group" style="text-align:right">
+      <label>الاسم</label>
+      <input type="text" id="loginName" placeholder="مثال: أحمد محمد" onkeydown="if(event.key==='Enter')loginUser()">
+    </div>
+    <div class="form-group" style="text-align:right">
+      <label>الشعبة</label>
+      <select id="loginDept">
+        <option value="التخطيط">شعبة التخطيط</option>
+        <option value="المتابعة">شعبة المتابعة</option>
+        <option value="برمجة الصيانة">برمجة الصيانة</option>
+        <option value="الإحصاء">شعبة الإحصاء</option>
+        <option value="إدارة">الإدارة</option>
+      </select>
+    </div>
+    <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="loginUser()">دخول</button>
+  </div>
+</div>
+
+<!-- ADD TASK -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <h3>✅ إضافة مهمة جديدة</h3>
+    <div class="form-group">
+      <label>وصف المهمة</label>
+      <input type="text" id="taskText" placeholder="اكتب وصف المهمة...">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>الأولوية</label>
+        <select id="taskPriority">
+          <option value="high">عالية 🔴</option>
+          <option value="medium" selected>متوسطة 🟡</option>
+          <option value="low">منخفضة 🟢</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>تاريخ الاستحقاق</label>
+        <input type="date" id="taskDue">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>ملاحظات إضافية</label>
+      <textarea id="taskNotes" placeholder="أي تفاصيل إضافية..." style="min-height:60px"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('taskModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveTask()">إضافة المهمة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD DOC -->
+<div class="modal-overlay" id="docModal">
+  <div class="modal">
+    <h3>📄 إضافة وثيقة جديدة</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>نوع الوثيقة</label>
+        <select id="docType">
+          <option>كتاب رسمي صادر</option>
+          <option>كتاب رسمي وارد</option>
+          <option>مذكرة داخلية</option>
+          <option>تقرير</option>
+          <option>نموذج</option>
+          <option>أمر صيانة</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>رقم الكتاب / المرجع</label>
+        <input type="text" id="docNum" placeholder="مثال: 2025/148">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>الموضوع</label>
+      <input type="text" id="docSubject" placeholder="موضوع الوثيقة التفصيلي">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>التاريخ</label>
+        <input type="date" id="docDate">
+      </div>
+      <div class="form-group">
+        <label>الحالة</label>
+        <select id="docStatus">
+          <option value="جديد">جديد</option>
+          <option value="قيد التنفيذ">قيد التنفيذ</option>
+          <option value="مكتمل">مكتمل</option>
+          <option value="معلق">معلق</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>ملاحظات / نص مقتضب</label>
+      <textarea id="docNotes" placeholder="اكتب ملخصاً أو ملاحظات للبحث لاحقاً..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('docModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveDoc()">حفظ وأرشفة</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOC FORM (templates) -->
+<div class="modal-overlay" id="docFormModal">
+  <div class="modal">
+    <h3 id="docFormTitle">📄 نموذج</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>رقم الوثيقة</label>
+        <input type="text" id="ff_num" placeholder="سيُولَّد تلقائياً">
+      </div>
+      <div class="form-group">
+        <label>التاريخ</label>
+        <input type="date" id="ff_date">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>الجهة المُوجَّه إليها / المصدرة</label>
+      <input type="text" id="ff_to" placeholder="">
+    </div>
+    <div class="form-group">
+      <label>الموضوع التفصيلي</label>
+      <textarea id="ff_subject" placeholder="اكتب الموضوع بالتفصيل..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>ملاحظات</label>
+      <textarea id="ff_notes" placeholder="أي ملاحظات إضافية..." style="min-height:60px"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('docFormModal')">إغلاق</button>
+      <button class="btn btn-primary" onclick="submitDocForm()">حفظ وأرشفة</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ARCHIVE -->
+<div class="modal-overlay" id="addArchiveModal">
+  <div class="modal">
+    <h3>🗃️ أرشفة وثيقة جديدة</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>رقم الكتاب</label>
+        <input type="text" id="archNum" placeholder="مثال: 2025/200">
+      </div>
+      <div class="form-group">
+        <label>الشعبة</label>
+        <select id="archDept">
+          <option>التخطيط</option><option>المتابعة</option>
+          <option>برمجة الصيانة</option><option>الإحصاء</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>الموضوع</label>
+      <input type="text" id="archSubject" placeholder="موضوع الكتاب">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>التاريخ</label>
+        <input type="date" id="archDate">
+      </div>
+      <div class="form-group">
+        <label>الحالة</label>
+        <select id="archStatus">
+          <option>جديد</option><option>قيد التنفيذ</option>
+          <option>مكتمل</option><option>معلق</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>نص مقتضب من محتوى الكتاب (للبحث)</label>
+      <textarea id="archContent" placeholder="اكتب ملخصاً أو نصاً من الكتاب للبحث لاحقاً..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('addArchiveModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveArchiveDoc()">أرشفة</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- ══════════ SCRIPTS ══════════ -->
+<script>
+// ── Firebase init ──
+const firebaseConfig = {
+  apiKey: "AIzaSyCpEJKxgyy_zk7h2lCqzwN7kEJA8qUkztY",
+  authDomain: "planning-dept--mosul-gas-plant.firebaseapp.com",
+  projectId: "planning-dept--mosul-gas-plant",
+  storageBucket: "planning-dept--mosul-gas-plant.firebasestorage.app",
+  messagingSenderId: "250508109961",
+  appId: "1:250508109961:web:15630cf664760aee21be58"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ── State ──
+let currentUser = { name:'', dept:'' };
+let currentSection = 'home';
+let currentTaskBranch = '';
+let currentDocBranch  = '';
+let currentDocFormBranch = '';
+let allArchiveDocs = [];
+let unsubscribers = {};
+
+const BRANCHES = ['planning','followup','maintenance','stats'];
+const BRANCH_NAMES = { planning:'التخطيط', followup:'المتابعة', maintenance:'برمجة الصيانة', stats:'الإحصاء' };
+const DEPT_COLORS  = { 'التخطيط':'badge-blue', 'المتابعة':'badge-green', 'برمجة الصيانة':'badge-amber', 'الإحصاء':'badge-purple' };
+const STATUS_COLORS = { 'جديد':'badge-blue','قيد التنفيذ':'badge-amber','مكتمل':'badge-green','معلق':'badge-red' };
+
+// ── Date ──
+function updateDate() {
+  document.getElementById('dateDisplay').textContent =
+    new Date().toLocaleDateString('ar-IQ',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+}
+updateDate();
+setInterval(updateDate,60000);
+
+// ── Login ──
+function loginUser() {
+  const name = document.getElementById('loginName').value.trim();
+  const dept = document.getElementById('loginDept').value;
+  if(!name){ showToast('يرجى إدخال اسمك','error'); return; }
+  currentUser = { name, dept };
+  document.getElementById('currentUserName').textContent = name;
+  document.getElementById('userAvatar').textContent = name.charAt(0);
+  closeModal('loginModal');
+  initListeners();
+  showToast('مرحباً ' + name + ' 👋','success');
+}
+
+function changeUser() {
+  document.getElementById('loginName').value = '';
+  openModal('loginModal');
+}
+
+// ── Navigation ──
+const PAGES = ['home','planning','followup','maintenance','stats','archive','drive'];
+function navigate(section) {
+  PAGES.forEach(p => {
+    document.getElementById('page-'+p).classList.remove('active');
+  });
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('page-'+section).classList.add('active');
+  // highlight nav
+  const map = {home:0,planning:1,followup:2,maintenance:3,stats:4,archive:5,drive:6};
+  document.querySelectorAll('.nav-item')[map[section]]?.classList.add('active');
+  currentSection = section;
+  if(section === 'archive') loadArchivePage();
+}
+
+// ── Real-time listeners ──
+function initListeners() {
+  // Tasks per branch
+  BRANCHES.forEach(branch => {
+    if(unsubscribers['tasks_'+branch]) unsubscribers['tasks_'+branch]();
+    unsubscribers['tasks_'+branch] = db.collection('tasks')
+      .where('branch','==',branch)
+      .orderBy('createdAt','desc')
+      .onSnapshot(snap => {
+        renderTasks(branch, snap.docs.map(d=>({id:d.id,...d.data()})));
+        updateHomeStats();
+      });
+  });
+
+  // Docs per branch
+  BRANCHES.forEach(branch => {
+    if(unsubscribers['docs_'+branch]) unsubscribers['docs_'+branch]();
+    unsubscribers['docs_'+branch] = db.collection('documents')
+      .where('branch','==',branch)
+      .orderBy('createdAt','desc')
+      .onSnapshot(snap => {
+        renderBranchDocs(branch, snap.docs.map(d=>({id:d.id,...d.data()})));
+      });
+  });
+
+  // Archive docs
+  if(unsubscribers['archive']) unsubscribers['archive']();
+  unsubscribers['archive'] = db.collection('archive')
+    .orderBy('createdAt','desc')
+    .onSnapshot(snap => {
+      allArchiveDocs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      updateYearCounts();
+      updateHomeStats();
+      if(currentSection==='archive') renderArchiveResults(allArchiveDocs);
+    });
+
+  // Recent docs for home
+  if(unsubscribers['recent']) unsubscribers['recent']();
+  unsubscribers['recent'] = db.collection('archive')
+    .orderBy('createdAt','desc').limit(8)
+    .onSnapshot(snap => {
+      renderRecentDocs(snap.docs.map(d=>({id:d.id,...d.data()})));
+    });
+}
+
+// ── Render Tasks ──
+function renderTasks(branch, tasks) {
+  const el = document.getElementById('tasks-'+branch);
+  if(!el) return;
+  if(!tasks.length) {
+    el.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div>لا توجد مهام بعد. أضف مهمة جديدة.</div>';
+    return;
+  }
+  const pColors = {high:'#e24b4a',medium:'#ef9f27',low:'#97c459'};
+  el.innerHTML = tasks.map(t => `
+    <div class="task-item">
+      <div class="task-check ${t.done?'done':''}" onclick="toggleTask('${t.id}','${branch}',${!t.done})">${t.done?'✓':''}</div>
+      <div class="priority-dot" style="background:${pColors[t.priority]||'#ccc'}"></div>
+      <div class="task-text ${t.done?'done':''}" style="flex:1">${t.text}</div>
+      ${t.due?`<div class="task-meta">📅 ${t.due}</div>`:''}
+      <span class="user-tag">${t.addedBy||'—'}</span>
+      <div onclick="deleteTask('${t.id}')" style="cursor:pointer;color:var(--text-muted);font-size:13px;padding:4px 8px;margin-right:4px">✕</div>
+    </div>
+  `).join('');
+}
+
+// ── Render Branch Docs ──
+function renderBranchDocs(branch, docs) {
+  const el = document.getElementById('docs-'+branch);
+  if(!el) return;
+  if(!docs.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">📄</div>لا توجد وثائق بعد.</div>';
+    return;
+  }
+  el.innerHTML = `<table><thead><tr><th>رقم الكتاب</th><th>الموضوع</th><th>النوع</th><th>التاريخ</th><th>بواسطة</th><th>الحالة</th></tr></thead><tbody>
+  ${docs.map(d=>`<tr>
+    <td style="font-weight:600;color:var(--primary)">${d.num||'—'}</td>
+    <td>${d.subject||'—'}</td>
+    <td><span class="badge badge-gray">${d.type||'—'}</span></td>
+    <td>${d.date||'—'}</td>
+    <td><span class="user-tag">${d.addedBy||'—'}</span></td>
+    <td><span class="badge ${STATUS_COLORS[d.status]||'badge-gray'}">${d.status||'—'}</span></td>
+  </tr>`).join('')}
+  </tbody></table>`;
+}
+
+// ── Render Recent Docs (Home) ──
+function renderRecentDocs(docs) {
+  const el = document.getElementById('recent-docs-table');
+  if(!el) return;
+  if(!docs.length){
+    el.innerHTML='<tr><td colspan="6"><div class="empty-state">لا توجد وثائق بعد</div></td></tr>';
+    return;
+  }
+  el.innerHTML = docs.map(d=>`<tr>
+    <td style="font-weight:600;color:var(--primary)">${d.num||'—'}</td>
+    <td>${d.subject||'—'}</td>
+    <td><span class="badge ${DEPT_COLORS[d.dept]||'badge-gray'}">${d.dept||'—'}</span></td>
+    <td>${d.date||'—'}</td>
+    <td><span class="user-tag">${d.addedBy||'—'}</span></td>
+    <td><span class="badge ${STATUS_COLORS[d.status]||'badge-gray'}">${d.status||'—'}</span></td>
+  </tr>`).join('');
+}
+
+// ── Home Stats ──
+function updateHomeStats() {
+  // tasks from firestore counted via snapshots - approximate with rendered data
+  let totalTasks = 0, doneTasks = 0;
+  BRANCHES.forEach(b => {
+    const el = document.getElementById('tasks-'+b);
+    if(el) {
+      totalTasks += el.querySelectorAll('.task-item').length;
+      doneTasks  += el.querySelectorAll('.task-check.done').length;
+    }
+  });
+  const s = document.getElementById('stat-tasks');
+  const d = document.getElementById('stat-done');
+  const a = document.getElementById('stat-docs');
+  if(s) s.textContent = totalTasks;
+  if(d) d.textContent = doneTasks;
+  if(a) a.textContent = allArchiveDocs.length;
+}
+
+// ── Toggle Task ──
+function toggleTask(id, branch, done) {
+  db.collection('tasks').doc(id).update({ done, updatedAt: new Date().toISOString(), updatedBy: currentUser.name })
+    .catch(() => showToast('خطأ في التحديث','error'));
+}
+
+// ── Delete Task ──
+function deleteTask(id) {
+  if(!confirm('هل تريد حذف هذه المهمة؟')) return;
+  db.collection('tasks').doc(id).delete()
+    .then(() => showToast('تم حذف المهمة'))
+    .catch(() => showToast('خطأ في الحذف','error'));
+}
+
+// ── Open Task Modal ──
+function openTaskModal(branch) {
+  if(!currentUser.name){ showToast('يرجى تسجيل الدخول أولاً','error'); return; }
+  currentTaskBranch = branch;
+  document.getElementById('taskText').value = '';
+  document.getElementById('taskDue').value  = '';
+  document.getElementById('taskNotes').value = '';
+  document.getElementById('taskPriority').value = 'medium';
+  openModal('taskModal');
+}
+
+// ── Save Task ──
+function saveTask() {
+  const text = document.getElementById('taskText').value.trim();
+  if(!text){ showToast('يرجى كتابة وصف المهمة','error'); return; }
+  db.collection('tasks').add({
+    text,
+    branch: currentTaskBranch,
+    priority: document.getElementById('taskPriority').value,
+    due: document.getElementById('taskDue').value,
+    notes: document.getElementById('taskNotes').value,
+    done: false,
+    addedBy: currentUser.name,
+    addedByDept: currentUser.dept,
+    createdAt: new Date().toISOString()
+  }).then(()=>{ closeModal('taskModal'); showToast('تمت إضافة المهمة ✓','success'); })
+    .catch(()=> showToast('خطأ في الحفظ','error'));
+}
+
+// ── Open Doc Modal ──
+function openDocModal(branch) {
+  if(!currentUser.name){ showToast('يرجى تسجيل الدخول أولاً','error'); return; }
+  currentDocBranch = branch;
+  document.getElementById('docNum').value = '';
+  document.getElementById('docSubject').value = '';
+  document.getElementById('docNotes').value = '';
+  document.getElementById('docDate').value = new Date().toISOString().split('T')[0];
+  openModal('docModal');
+}
+
+// ── Save Doc ──
+function saveDoc() {
+  const subject = document.getElementById('docSubject').value.trim();
+  if(!subject){ showToast('يرجى كتابة الموضوع','error'); return; }
+  const num = document.getElementById('docNum').value.trim() ||
+    (new Date().getFullYear() + '/' + Math.floor(Math.random()*900+100));
+  const data = {
+    num, subject,
+    branch: currentDocBranch,
+    dept: BRANCH_NAMES[currentDocBranch],
+    type: document.getElementById('docType').value,
+    date: document.getElementById('docDate').value,
+    status: document.getElementById('docStatus').value,
+    notes: document.getElementById('docNotes').value,
+    addedBy: currentUser.name,
+    addedByDept: currentUser.dept,
+    createdAt: new Date().toISOString(),
+    year: document.getElementById('docDate').value.split('-')[0] || String(new Date().getFullYear())
+  };
+  // Save to documents collection AND archive
+  const batch = db.batch();
+  const docRef = db.collection('documents').doc();
+  const archRef = db.collection('archive').doc();
+  batch.set(docRef, data);
+  batch.set(archRef, {...data, content: data.notes});
+  batch.commit()
+    .then(()=>{ closeModal('docModal'); showToast('تمت أرشفة الوثيقة ✓','success'); })
+    .catch(()=> showToast('خطأ في الحفظ','error'));
+}
+
+// ── Doc Form (template) ──
+function openDocForm(type, branch) {
+  if(!currentUser.name){ showToast('يرجى تسجيل الدخول أولاً','error'); return; }
+  currentDocFormBranch = branch;
+  document.getElementById('docFormTitle').textContent = '📄 ' + type;
+  document.getElementById('ff_num').value = '';
+  document.getElementById('ff_date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ff_to').value = '';
+  document.getElementById('ff_subject').value = '';
+  document.getElementById('ff_notes').value = '';
+  openModal('docFormModal');
+}
+
+function submitDocForm() {
+  const subject = document.getElementById('ff_subject').value.trim();
+  if(!subject){ showToast('يرجى كتابة الموضوع','error'); return; }
+  const num = document.getElementById('ff_num').value.trim() ||
+    (new Date().getFullYear() + '/' + Math.floor(Math.random()*900+100));
+  const data = {
+    num, subject,
+    branch: currentDocFormBranch,
+    dept: BRANCH_NAMES[currentDocFormBranch],
+    type: document.getElementById('docFormTitle').textContent.replace('📄 ',''),
+    to: document.getElementById('ff_to').value,
+    date: document.getElementById('ff_date').value,
+    notes: document.getElementById('ff_notes').value,
+    status: 'جديد',
+    addedBy: currentUser.name,
+    addedByDept: currentUser.dept,
+    createdAt: new Date().toISOString(),
+    year: document.getElementById('ff_date').value.split('-')[0] || String(new Date().getFullYear())
+  };
+  const batch = db.batch();
+  batch.set(db.collection('documents').doc(), data);
+  batch.set(db.collection('archive').doc(), {...data, content: data.notes});
+  batch.commit()
+    .then(()=>{ closeModal('docFormModal'); showToast('تم حفظ الوثيقة وأرشفتها ✓','success'); })
+    .catch(()=> showToast('خطأ في الحفظ','error'));
+}
+
+// ── Archive ──
+function loadArchivePage() {
+  if(allArchiveDocs.length > 0) renderArchiveResults(allArchiveDocs);
+}
+
+function renderArchiveResults(docs) {
+  const container = document.getElementById('archiveResults');
+  if(!docs.length){
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">🗃️</div>لا توجد نتائج مطابقة</div>';
+    return;
+  }
+  container.innerHTML = '<div class="section-title">النتائج (' + docs.length + ' وثيقة)</div>' +
+    docs.map(d=>`
+    <div class="archive-result">
+      <div class="archive-icon">📄</div>
+      <div class="archive-info">
+        <h4>${d.subject||'—'}</h4>
+        ${d.content?`<p>${d.content.substring(0,120)}...</p>`:''}
+        <div class="archive-meta">
+          <span class="badge ${DEPT_COLORS[d.dept]||'badge-gray'}">${d.dept||'—'}</span>
+          <span class="badge badge-gray">📁 ${d.year||'—'}</span>
+          <span class="badge ${STATUS_COLORS[d.status]||'badge-gray'}">${d.status||'—'}</span>
+          ${d.date?`<span style="font-size:11px;color:var(--text-muted)">${d.date}</span>`:''}
+          <span class="user-tag">${d.addedBy||'—'}</span>
+        </div>
+      </div>
+      <div style="text-align:left;flex-shrink:0">
+        <div class="arch-num">${d.num||'—'}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${d.type||''}</div>
+      </div>
+    </div>`).join('');
+}
+
+function searchArchive() {
+  const num  = document.getElementById('searchNum').value.trim().toLowerCase();
+  const year = document.getElementById('searchYear').value;
+  const dept = document.getElementById('searchDept').value;
+  const text = document.getElementById('searchText').value.trim().toLowerCase();
+  const results = allArchiveDocs.filter(d => {
+    if(num  && !(d.num||'').toLowerCase().includes(num)) return false;
+    if(year && d.year !== year) return false;
+    if(dept && d.dept !== dept) return false;
+    if(text && !(d.subject||'').toLowerCase().includes(text) && !(d.content||'').toLowerCase().includes(text)) return false;
+    return true;
+  });
+  document.getElementById('searchResultsCount').textContent = 'تم العثور على ' + results.length + ' نتيجة';
+  renderArchiveResults(results);
+}
+
+function clearSearch() {
+  ['searchNum','searchText'].forEach(id=>document.getElementById(id).value='');
+  ['searchYear','searchDept'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('searchResultsCount').textContent='';
+  renderArchiveResults(allArchiveDocs);
+}
+
+function filterYear(year) {
+  document.getElementById('searchYear').value = year;
+  searchArchive();
+}
+
+function updateYearCounts() {
+  ['2022','2023','2024','2025','2026'].forEach(y => {
+    const el = document.getElementById('count-'+y);
+    if(el) {
+      const c = allArchiveDocs.filter(d=>d.year===y).length;
+      el.textContent = c ? c+' وثيقة' : 'فارغ';
+    }
+  });
+}
+
+function openAddArchiveModal() {
+  if(!currentUser.name){ showToast('يرجى تسجيل الدخول أولاً','error'); return; }
+  document.getElementById('archNum').value='';
+  document.getElementById('archSubject').value='';
+  document.getElementById('archContent').value='';
+  document.getElementById('archDate').value=new Date().toISOString().split('T')[0];
+  openModal('addArchiveModal');
+}
+
+function saveArchiveDoc() {
+  const num = document.getElementById('archNum').value.trim();
+  const subject = document.getElementById('archSubject').value.trim();
+  if(!num||!subject){ showToast('يرجى ملء الحقول المطلوبة','error'); return; }
+  const date = document.getElementById('archDate').value;
+  db.collection('archive').add({
+    num, subject,
+    dept: document.getElementById('archDept').value,
+    date,
+    year: date.split('-')[0] || String(new Date().getFullYear()),
+    status: document.getElementById('archStatus').value,
+    content: document.getElementById('archContent').value,
+    addedBy: currentUser.name,
+    addedByDept: currentUser.dept,
+    createdAt: new Date().toISOString()
+  }).then(()=>{ closeModal('addArchiveModal'); showToast('تمت الأرشفة بنجاح ✓','success'); })
+    .catch(()=> showToast('خطأ في الحفظ','error'));
+}
+
+// ── Modal helpers ──
+function openModal(id){ document.getElementById(id).classList.add('open'); }
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click', e=>{ if(e.target===o && o.id!=='loginModal') o.classList.remove('open'); });
+});
+
+// ── Toast ──
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type?' '+type:'');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
