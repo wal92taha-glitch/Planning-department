@@ -348,7 +348,8 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
     <div style="margin-bottom:11px"><label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">البحث بالنص المتضمن في الكتاب</label><input type="text" id="sText" placeholder="ادخل كلمات من موضوع الكتاب أو محتواه..." style="width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)"></div>
     <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-p" onclick="searchArchive()">🔍 بحث في الأرشيف</button>
-      <button class="btn btn-g" onclick="searchDrive()">☁️ بحث في Drive</button>
+      <button class="btn btn-g" onclick="searchDriveContent()">☁️ بحث في محتوى Drive</button>
+      <button class="btn btn-o" onclick="searchDriveTitles()">📄 بحث في أسماء الملفات</button>
       <button class="btn btn-o" onclick="clearSearch()">مسح</button>
       <span id="srCount" style="font-size:12px;color:var(--text-muted);margin-right:auto"></span>
     </div>
@@ -367,11 +368,23 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 <!-- GOOGLE DRIVE PAGE -->
 <div id="page-drive" class="page">
   <div class="phead">
-    <div class="ptitle"><div class="ibig" style="background:#e8f0fe;color:#4285f4">☁️</div><div><h2>Google Drive</h2><p>تصفح ورفع وبحث في ملفات القسم</p></div></div>
+    <div class="ptitle"><div class="ibig" style="background:#e8f0fe;color:#4285f4">☁️</div><div><h2>Google Drive</h2><p>تصفح وبحث في ملفات القسم</p></div></div>
     <div class="bgroup">
-      <button class="btn btn-g" onclick="loadDriveFiles('')"><span>🔄</span> تحديث</button>
+      <button class="btn btn-g" onclick="loadDriveFiles('')">🔄 تحديث</button>
+      <button class="btn btn-a" onclick="runOCR()" id="ocrBtn">🔍 فهرسة OCR</button>
     </div>
   </div>
+  <!-- OCR STATUS BOX -->
+  <div id="ocrStatusBox" style="display:none;background:#fffbea;border:1px solid #f0c040;border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div class="spinner" style="width:20px;height:20px;border-width:2px"></div>
+      <strong style="font-size:14px">جاري تشغيل OCR على الملفات...</strong>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">⏳ هذه العملية قد تأخذ عدة دقائق حسب عدد الملفات. يرجى الانتظار.</p>
+    <div id="ocrProgress" style="font-size:13px;color:var(--primary)"></div>
+  </div>
+  <!-- OCR RESULT BOX -->
+  <div id="ocrResultBox" style="display:none;border-radius:10px;padding:16px;margin-bottom:16px"></div>
   <div class="dbanner">
     <div class="dbanner-ico">☁️</div>
     <div class="dbanner-info"><h4>محطة كهرباء الموصل الغازية — قسم التخطيط والمتابعة</h4><p>تصفح الملفات مباشرة من Google Drive حسب السنة</p></div>
@@ -752,18 +765,39 @@ function searchArchive(){
   renderArchiveResults(results);
 }
 
-function searchDrive(){
+function searchDriveContent(){
   const q=document.getElementById('sText').value.trim()||document.getElementById('sNum').value.trim();
   const year=document.getElementById('sYear').value;
-  if(!q&&!year){showToast('اكتب نصاً للبحث في Drive','err');return;}
-  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث في Drive...</div>';
+  if(!q){showToast('اكتب نصاً للبحث في محتوى Drive','err');return;}
+  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث داخل محتوى الملفات في Drive...<br><small style="color:var(--text-muted)">قد يستغرق هذا بضع ثوانٍ</small></div>';
   const url=DRIVE_API+'?action=search&q='+encodeURIComponent(q)+(year?'&year='+year:'');
   fetch(url).then(r=>r.json()).then(data=>{
+    if(!data.success){
+      document.getElementById('archiveResults').innerHTML='<div class="empty"><div class="eico">⚠️</div>'+
+        (data.error||'خطأ في البحث')+'<br><small>تأكد من تشغيل فهرسة OCR أولاً من صفحة Drive</small></div>';
+      return;
+    }
+    document.getElementById('srCount').textContent='Drive (محتوى): '+data.files.length+' ملف';
+    renderDriveResults(data.files,'archiveResults');
+  }).catch(()=>{
+    document.getElementById('archiveResults').innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر الاتصال بـ Drive<br><small>تحقق من الإنترنت</small></div>';
+  });
+}
+
+function searchDriveTitles(){
+  const q=document.getElementById('sText').value.trim()||document.getElementById('sNum').value.trim();
+  const year=document.getElementById('sYear').value;
+  if(!q){showToast('اكتب نصاً للبحث في أسماء الملفات','err');return;}
+  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث في أسماء الملفات...</div>';
+  const url=DRIVE_API+'?action=searchTitle&q='+encodeURIComponent(q)+(year?'&year='+year:'');
+  fetch(url).then(r=>r.json()).then(data=>{
     if(!data.success){showToast('خطأ في البحث','err');return;}
-    document.getElementById('srCount').textContent='Drive: '+data.files.length+' ملف';
+    document.getElementById('srCount').textContent='Drive (أسماء): '+data.files.length+' ملف';
     renderDriveResults(data.files,'archiveResults');
   }).catch(()=>showToast('تعذر الاتصال بـ Drive','err'));
 }
+
+function searchDrive(){ searchDriveContent(); }
 
 function renderDriveResults(files,containerId){
   const el=document.getElementById(containerId); if(!el)return;
@@ -863,6 +897,83 @@ function renderDriveFiles(files){
         <div style="font-size:10px;color:var(--text-muted);margin-top:3px">${f.year||''}</div>
       </div>
     </div>`).join('');
+}
+
+// ══════════ OCR ══════════
+function runOCR(){
+  if(!confirm('سيقوم النظام بقراءة جميع ملفات PDF والصور في Drive وتحويلها إلى نص قابل للبحث.\n\nهذه العملية قد تأخذ عدة دقائق.\n\nهل تريد المتابعة؟')) return;
+  
+  const btn = document.getElementById('ocrBtn');
+  const statusBox = document.getElementById('ocrStatusBox');
+  const resultBox = document.getElementById('ocrResultBox');
+  
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري الفهرسة...';
+  statusBox.style.display = 'block';
+  resultBox.style.display = 'none';
+  
+  // تحديث تقدم العملية
+  let dots = 0;
+  const progressInterval = setInterval(()=>{
+    dots = (dots+1)%4;
+    const d = document.getElementById('ocrProgress');
+    if(d) d.textContent = 'جاري معالجة الملفات' + '.'.repeat(dots+1);
+  }, 800);
+  
+  fetch(DRIVE_API + '?action=ocr')
+    .then(r => r.json())
+    .then(data => {
+      clearInterval(progressInterval);
+      statusBox.style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = '🔍 فهرسة OCR';
+      
+      if(data.success){
+        resultBox.style.display = 'block';
+        resultBox.style.background = '#eaf3de';
+        resultBox.style.border = '1px solid #3b6d11';
+        resultBox.innerHTML = `
+          <h4 style="font-size:14px;font-weight:700;color:#3b6d11;margin-bottom:10px">✅ تمت الفهرسة بنجاح!</h4>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
+            <div style="background:#fff;border-radius:8px;padding:12px">
+              <div style="font-size:22px;font-weight:700;color:#3b6d11">${data.processed||0}</div>
+              <div style="font-size:11px;color:var(--text-muted)">ملف تمت فهرسته</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:12px">
+              <div style="font-size:22px;font-weight:700;color:#854f0b">${data.skipped||0}</div>
+              <div style="font-size:11px;color:var(--text-muted)">ملف تم تجاوزه</div>
+            </div>
+            <div style="background:#fff;border-radius:8px;padding:12px">
+              <div style="font-size:22px;font-weight:700;color:#a32d2d">${data.errors||0}</div>
+              <div style="font-size:11px;color:var(--text-muted)">أخطاء</div>
+            </div>
+          </div>
+          <p style="font-size:12px;color:#3b6d11;margin-top:10px">✅ يمكنك الآن البحث داخل محتوى جميع الملفات المفهرسة</p>
+        `;
+        showToast('تمت الفهرسة بنجاح! ' + (data.processed||0) + ' ملف','ok');
+      } else {
+        resultBox.style.display = 'block';
+        resultBox.style.background = '#fcebeb';
+        resultBox.style.border = '1px solid #a32d2d';
+        resultBox.innerHTML = `
+          <h4 style="font-size:14px;font-weight:700;color:#a32d2d;margin-bottom:8px">⚠️ حدث خطأ</h4>
+          <p style="font-size:12px;color:var(--text-muted)">${data.error||'خطأ غير معروف'}</p>
+          <p style="font-size:12px;color:#a32d2d;margin-top:8px">تأكد من تفعيل Drive API في Apps Script</p>
+        `;
+        showToast('خطأ في الفهرسة','err');
+      }
+    })
+    .catch(err=>{
+      clearInterval(progressInterval);
+      statusBox.style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = '🔍 فهرسة OCR';
+      resultBox.style.display = 'block';
+      resultBox.style.background = '#fcebeb';
+      resultBox.style.border = '1px solid #a32d2d';
+      resultBox.innerHTML = '<h4 style="color:#a32d2d">⚠️ تعذر الاتصال بـ Apps Script</h4><p style="font-size:12px;margin-top:8px">تحقق من الإنترنت وإعدادات النشر</p>';
+      showToast('تعذر الاتصال','err');
+    });
 }
 
 function updateDriveCounts(files){
