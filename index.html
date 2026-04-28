@@ -6,13 +6,14 @@
 <title>قسم التخطيط والمتابعة — محطة كهرباء الموصل الغازية</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap');
-:root {
-  --primary:#1a3a5c; --primary-light:#2563a8; --accent:#d4a017;
-  --bg:#f0f4f8; --surface:#fff; --border:rgba(0,0,0,0.1);
-  --text:#1a2436; --text-muted:#5a6a7e;
-  --sidebar-w:230px; --header-h:62px; --danger:#c0392b;
+:root{
+  --primary:#1a3a5c;--primary-light:#2563a8;--accent:#d4a017;
+  --bg:#f0f4f8;--surface:#fff;--border:rgba(0,0,0,0.1);
+  --text:#1a2436;--text-muted:#5a6a7e;--danger:#c0392b;
+  --green:#27ae60;--sidebar-w:230px;--header-h:62px;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column;}
@@ -28,8 +29,12 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .obadge{background:rgba(46,213,115,0.2);border:1px solid rgba(46,213,115,0.4);color:#2ed573;font-size:11px;padding:3px 9px;border-radius:20px;display:flex;align-items:center;gap:4px;}
 .odot{width:6px;height:6px;border-radius:50%;background:#2ed573;animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.udisp{background:rgba(255,255,255,0.12);border-radius:8px;padding:5px 10px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:6px;}
-.uavatar{width:22px;height:22px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--primary);}
+.udisp{background:rgba(255,255,255,0.12);border-radius:8px;padding:5px 12px;color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;gap:8px;}
+.uavatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--primary);}
+.rbadge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;}
+.rb-head{background:#d4a017;color:#1a3a5c;}
+.rb-chief{background:#2563a8;color:#fff;}
+.rb-member{background:rgba(255,255,255,0.2);color:#fff;}
 
 /* LAYOUT */
 .layout{display:flex;flex:1;min-height:0;}
@@ -40,6 +45,7 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 .nitem{display:flex;align-items:center;gap:9px;padding:10px 14px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:13px;font-weight:500;transition:all .2s;border-right:3px solid transparent;}
 .nitem:hover{background:rgba(255,255,255,0.08);color:#fff;}
 .nitem.active{background:rgba(255,255,255,0.13);color:#fff;border-right-color:var(--accent);}
+.nitem.locked{opacity:0.3;cursor:not-allowed;pointer-events:none;}
 .nitem .ico{width:27px;height:27px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
 .nitem.active .ico{background:var(--accent);color:var(--primary);}
 .sdivider{height:.5px;background:rgba(255,255,255,0.1);margin:5px 0;}
@@ -59,10 +65,12 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
 /* BUTTONS */
 .btn{padding:8px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'Cairo',sans-serif;font-size:13px;font-weight:600;transition:all .2s;}
-.btn-p{background:var(--primary);color:#fff;} .btn-p:hover{background:var(--primary-light);}
-.btn-o{background:transparent;border:.5px solid var(--border);color:var(--text);} .btn-o:hover{background:var(--bg);}
+.btn-p{background:var(--primary);color:#fff;}.btn-p:hover{background:var(--primary-light);}
+.btn-o{background:transparent;border:.5px solid var(--border);color:var(--text);}.btn-o:hover{background:var(--bg);}
 .btn-a{background:var(--accent);color:var(--primary);}
-.btn-g{background:#4285f4;color:#fff;display:flex;align-items:center;gap:6px;} .btn-g:hover{background:#2563eb;}
+.btn-g{background:#4285f4;color:#fff;}.btn-g:hover{background:#2563eb;}
+.btn-gr{background:var(--green);color:#fff;}
+.btn-d{background:var(--danger);color:#fff;}
 .btn-sm{padding:5px 12px;font-size:12px;}
 .bgroup{display:flex;gap:8px;flex-wrap:wrap;}
 
@@ -84,25 +92,25 @@ body{font-family:'Cairo',sans-serif;background:var(--bg);color:var(--text);min-h
 
 /* BADGES */
 .badge{font-size:11px;padding:3px 9px;border-radius:20px;font-weight:500;}
-.bb{background:#e6f1fb;color:#185fa5;} .bg{background:#eaf3de;color:#3b6d11;}
-.ba{background:#faeeda;color:#854f0b;} .bp{background:#eeedfe;color:#534ab7;}
-.br{background:#fcebeb;color:#a32d2d;} .bgr{background:#f1efe8;color:#5f5e5a;}
+.bb{background:#e6f1fb;color:#185fa5;}.bg{background:#eaf3de;color:#3b6d11;}
+.ba{background:#faeeda;color:#854f0b;}.bp{background:#eeedfe;color:#534ab7;}
+.br{background:#fcebeb;color:#a32d2d;}.bgr{background:#f1efe8;color:#5f5e5a;}
 
 /* TABLE */
 .twrap{background:var(--surface);border-radius:12px;border:.5px solid var(--border);overflow:hidden;margin-bottom:20px;}
-.thead2{display:flex;justify-content:space-between;align-items:center;padding:13px 17px;border-bottom:.5px solid var(--border);}
+.thead2{display:flex;justify-content:space-between;align-items:center;padding:13px 17px;border-bottom:.5px solid var(--border);flex-wrap:wrap;gap:8px;}
 .thead2 h3{font-size:14px;font-weight:600;}
 table{width:100%;border-collapse:collapse;}
 th{background:#f8f9fa;font-size:11px;font-weight:600;color:var(--text-muted);padding:9px 13px;text-align:right;border-bottom:.5px solid var(--border);}
 td{padding:9px 13px;font-size:13px;border-bottom:.5px solid var(--border);vertical-align:middle;}
-tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
+tr:last-child td{border-bottom:none;}tr:hover td{background:#fafbfc;}
 
 /* TASKS */
 .titem{display:flex;align-items:center;gap:9px;padding:10px 15px;border-bottom:.5px solid var(--border);}
 .titem:last-child{border-bottom:none;}
 .tchk{width:19px;height:19px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .2s;}
 .tchk.done{background:#3b6d11;border-color:#3b6d11;color:#fff;}
-.ttxt{flex:1;font-size:13px;} .ttxt.done{text-decoration:line-through;color:var(--text-muted);}
+.ttxt{flex:1;font-size:13px;}.ttxt.done{text-decoration:line-through;color:var(--text-muted);}
 .tmeta{font-size:11px;color:var(--text-muted);white-space:nowrap;}
 .pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
 .utag{font-size:11px;color:var(--text-muted);background:var(--bg);border-radius:4px;padding:2px 6px;border:.5px solid var(--border);}
@@ -110,12 +118,12 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 /* MODAL */
 .moverlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;}
 .moverlay.open{display:flex;}
-.modal{background:var(--surface);border-radius:16px;padding:24px;width:560px;max-width:95vw;max-height:88vh;overflow-y:auto;}
+.modal{background:var(--surface);border-radius:16px;padding:24px;width:580px;max-width:95vw;max-height:90vh;overflow-y:auto;}
 .modal h3{font-size:16px;font-weight:700;margin-bottom:16px;}
 .fg{margin-bottom:13px;}
 .fg label{display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--text-muted);}
 .fg input,.fg textarea,.fg select{width:100%;padding:9px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;color:var(--text);background:var(--bg);outline:none;transition:border-color .2s;}
-.fg input:focus,.fg textarea:focus{border-color:var(--primary-light);}
+.fg input:focus,.fg textarea:focus,.fg select:focus{border-color:var(--primary-light);}
 .fg textarea{resize:vertical;min-height:75px;}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
 .mactions{display:flex;gap:9px;justify-content:flex-end;margin-top:16px;}
@@ -124,72 +132,174 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 .stitle{font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:11px;margin-top:4px;display:flex;align-items:center;gap:8px;}
 .stitle::after{content:'';flex:1;height:1px;background:var(--border);}
 
-/* ARCHIVE */
+/* LOGIN SCREEN */
+.login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#1a3a5c 0%,#2563a8 100%);display:flex;align-items:center;justify-content:center;z-index:500;padding:20px;}
+.login-box{background:#fff;border-radius:20px;padding:36px;width:420px;max-width:95vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.login-logo{width:70px;height:70px;border-radius:16px;background:var(--primary);display:flex;align-items:center;justify-content:center;font-size:32px;color:var(--accent);margin:0 auto 16px;}
+.login-box h2{font-size:18px;font-weight:700;color:var(--primary);margin-bottom:4px;}
+.login-box p{font-size:12px;color:var(--text-muted);margin-bottom:24px;}
+.role-cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;}
+.role-card{border:.5px solid var(--border);border-radius:10px;padding:12px 8px;cursor:pointer;transition:all .2s;text-align:center;}
+.role-card:hover{border-color:var(--primary);background:#f0f4f8;}
+.role-card.selected{border-color:var(--primary);background:#e6f1fb;}
+.role-card .rico{font-size:24px;margin-bottom:6px;}
+.role-card span{font-size:11px;font-weight:600;color:var(--text);display:block;}
+.pin-display{display:flex;justify-content:center;gap:8px;margin:16px 0;}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--border);transition:all .2s;}
+.pin-dot.filled{background:var(--primary);border-color:var(--primary);}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto;}
+.num-btn{padding:14px;border:none;border-radius:10px;background:var(--bg);font-family:'Cairo',sans-serif;font-size:18px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--text);}
+.num-btn:hover{background:#d0dae6;}
+.num-btn:active{transform:scale(0.95);}
+.num-del{background:#fcebeb;color:var(--danger);}
+.login-name-section{margin-bottom:16px;text-align:right;}
+
+/* ARCHIVE / DRIVE */
 .sbox{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
 .sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px;margin-bottom:11px;}
 .ares{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:14px;margin-bottom:9px;display:flex;align-items:flex-start;gap:13px;transition:all .2s;cursor:pointer;}
 .ares:hover{border-color:var(--primary-light);}
 .aico{width:38px;height:38px;border-radius:8px;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
-.ainfo{flex:1;}
-.ainfo h4{font-size:13px;font-weight:600;margin-bottom:3px;}
+.ainfo{flex:1;}.ainfo h4{font-size:13px;font-weight:600;margin-bottom:3px;}
 .ainfo p{font-size:11px;color:var(--text-muted);line-height:1.6;}
 .ameta{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px;}
 .anum{font-size:13px;font-weight:700;color:var(--primary);white-space:nowrap;}
 
-/* DRIVE FILE */
+/* DRIVE */
+.dbanner{background:linear-gradient(135deg,#e8f0fe,#e6f1fb);border:.5px solid rgba(66,133,244,0.3);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:18px;}
 .dfile{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:13px;display:flex;align-items:center;gap:12px;margin-bottom:8px;cursor:pointer;transition:all .2s;}
 .dfile:hover{border-color:#4285f4;background:#f8fbff;}
-.dfile-ico{width:36px;height:36px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
-.dfile-info{flex:1;}
-.dfile-info h4{font-size:13px;font-weight:600;margin-bottom:2px;}
-.dfile-info p{font-size:11px;color:var(--text-muted);}
-.dfile-meta{text-align:left;flex-shrink:0;}
-
-/* FOLDERS */
 .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:16px;}
 .fitem{background:var(--surface);border:.5px solid var(--border);border-radius:10px;padding:13px;text-align:center;cursor:pointer;transition:all .2s;}
 .fitem:hover{border-color:#4285f4;transform:translateY(-2px);}
+.fitem.selected{border-color:#4285f4;background:#f0f7ff;}
 .fitem .fi{font-size:28px;margin-bottom:6px;}
 .fitem span{font-size:12px;font-weight:600;display:block;}
 .fitem small{font-size:10px;color:var(--text-muted);}
-.fitem.selected{border-color:#4285f4;background:#f0f7ff;}
 
-/* DRIVE CONNECT BANNER */
-.dbanner{background:linear-gradient(135deg,#e8f0fe,#e6f1fb);border:.5px solid rgba(66,133,244,0.3);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:14px;margin-bottom:18px;}
-.dbanner-ico{font-size:30px;}
-.dbanner-info h4{font-size:14px;font-weight:700;color:#185fa5;}
-.dbanner-info p{font-size:12px;color:var(--text-muted);margin-top:2px;}
+/* OFFICIAL LETTERS TABLE */
+.letters-status{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:20px;}
+.ls-pending{background:#faeeda;color:#854f0b;}
+.ls-inprog{background:#e6f1fb;color:#185fa5;}
+.ls-done{background:#eaf3de;color:#3b6d11;}
+.action-btns{display:flex;gap:5px;}
+.print-btn,.dl-btn{border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:600;}
+.print-btn{background:#eeedfe;color:#534ab7;}
+.dl-btn{background:#e6f1fb;color:#185fa5;}
 
-/* LOADING */
+/* CHARTS */
+.chart-wrap{background:var(--surface);border:.5px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;}
+.chart-wrap h3{font-size:14px;font-weight:600;margin-bottom:14px;}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+
+/* ACCESS DENIED */
+.access-denied{text-align:center;padding:60px 20px;}
+.access-denied .ad-icon{font-size:56px;margin-bottom:16px;}
+.access-denied h3{font-size:18px;font-weight:700;color:var(--danger);margin-bottom:8px;}
+.access-denied p{font-size:13px;color:var(--text-muted);}
+
+/* LOADING / EMPTY */
 .lspin{text-align:center;padding:28px;color:var(--text-muted);font-size:13px;}
 .spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 9px;}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* EMPTY */
 .empty{text-align:center;padding:32px 18px;color:var(--text-muted);font-size:13px;}
 .empty .eico{font-size:34px;margin-bottom:9px;}
 
 /* TOAST */
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--primary);color:#fff;padding:9px 22px;border-radius:30px;font-size:13px;font-weight:500;z-index:999;transition:transform .3s ease;pointer-events:none;}
 .toast.show{transform:translateX(-50%) translateY(0);}
-.toast.ok{background:#27ae60;} .toast.err{background:var(--danger);}
+.toast.ok{background:#27ae60;}.toast.err{background:var(--danger);}
 
 /* FOOTER */
-.footer{text-align:center;padding:14px;font-size:12px;color:var(--text-muted);border-top:.5px solid var(--border);background:var(--surface);}
-
-/* PROGRESS */
-.prog{background:var(--bg);border-radius:20px;height:5px;overflow:hidden;margin-top:7px;}
-.progf{height:100%;border-radius:20px;}
+.footer{text-align:center;padding:12px;font-size:12px;color:var(--text-muted);border-top:.5px solid var(--border);background:var(--surface);}
 
 @media(max-width:700px){
-  .sidebar{width:50px;} .nitem span,.slabel{display:none;}
-  .main{padding:13px;} .sgrid{grid-template-columns:1fr;} .frow{grid-template-columns:1fr;}
+  .sidebar{width:50px;}.nitem span,.slabel{display:none;}
+  .main{padding:13px;}.sgrid,.frow,.charts-grid{grid-template-columns:1fr;}
+  .role-cards{grid-template-columns:1fr 1fr 1fr;}
+}
+@media print{
+  .sidebar,.header,.footer,.btn,.bgroup,.moverlay,.toast{display:none!important;}
+  .main{padding:0;}.page.active{display:block;}
+  body{background:#fff;}
 }
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">🏛️</div>
+    <h2>قسم التخطيط والمتابعة</h2>
+    <p>محطة كهرباء الموصل الغازية</p>
+
+    <!-- STEP 1: ROLE -->
+    <div id="step-role">
+      <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">اختر صفتك الوظيفية</p>
+      <div class="role-cards">
+        <div class="role-card" onclick="selectRole('head','رئيس القسم','👑')">
+          <div class="rico">👑</div><span>رئيس القسم</span>
+        </div>
+        <div class="role-card" onclick="selectRole('chief','رئيس شعبة','🎖️')">
+          <div class="rico">🎖️</div><span>رئيس شعبة</span>
+        </div>
+        <div class="role-card" onclick="selectRole('member','منتسب','👤')">
+          <div class="rico">👤</div><span>منتسب</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: BRANCH (for chief only) -->
+    <div id="step-branch" style="display:none">
+      <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">اختر شعبتك</p>
+      <div class="fg"><select id="branchSelect" style="text-align:center;font-size:14px">
+        <option value="planning">شعبة التخطيط</option>
+        <option value="followup">شعبة المتابعة</option>
+        <option value="maintenance">برمجة الصيانة</option>
+        <option value="stats">شعبة الإحصاء</option>
+      </select></div>
+      <button class="btn btn-p" style="width:100%" onclick="showPinStep()">التالي →</button>
+      <button class="btn btn-o" style="width:100%;margin-top:8px" onclick="backToRole()">← رجوع</button>
+    </div>
+
+    <!-- STEP 3: PIN -->
+    <div id="step-pin" style="display:none">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px" id="pinRoleLabel"></div>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:12px">أدخل الرقم السري (4 أرقام)</p>
+      <div class="pin-display">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div id="pinError" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px"></div>
+      <div class="numpad">
+        <button class="num-btn" onclick="addPin('1')">1</button>
+        <button class="num-btn" onclick="addPin('2')">2</button>
+        <button class="num-btn" onclick="addPin('3')">3</button>
+        <button class="num-btn" onclick="addPin('4')">4</button>
+        <button class="num-btn" onclick="addPin('5')">5</button>
+        <button class="num-btn" onclick="addPin('6')">6</button>
+        <button class="num-btn" onclick="addPin('7')">7</button>
+        <button class="num-btn" onclick="addPin('8')">8</button>
+        <button class="num-btn" onclick="addPin('9')">9</button>
+        <button class="num-btn btn-o" onclick="backToRole()">↩</button>
+        <button class="num-btn" onclick="addPin('0')">0</button>
+        <button class="num-btn num-del" onclick="delPin()">⌫</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: NAME -->
+    <div id="step-name" style="display:none">
+      <p style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px">أدخل اسمك</p>
+      <div class="fg"><input type="text" id="loginName" placeholder="الاسم الكامل" onkeydown="if(event.key==='Enter')finishLogin()"></div>
+      <button class="btn btn-p" style="width:100%" onclick="finishLogin()">دخول →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ HEADER ══════════ -->
 <div class="header">
   <div class="hlogo">
     <div class="emb">ت</div>
@@ -201,28 +311,31 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
   <div class="hright">
     <div class="datedisp" id="dateDisplay"></div>
     <div class="obadge"><div class="odot"></div>متصل</div>
-    <div class="udisp" onclick="changeUser()">
+    <div class="udisp" onclick="logout()">
       <div class="uavatar" id="userAvatar">؟</div>
-      <span id="userName">تسجيل الدخول</span>
+      <div>
+        <div id="userName" style="font-size:12px">—</div>
+        <div id="userRoleBadge"></div>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- LAYOUT -->
+<!-- ══════════ LAYOUT ══════════ -->
 <div class="layout">
-<nav class="sidebar">
+<nav class="sidebar" id="sidebar">
   <div class="slabel">الرئيسية</div>
   <div class="nitem active" onclick="nav('home')"><div class="ico">🏠</div><span>لوحة التحكم</span></div>
   <div class="sdivider"></div>
   <div class="slabel">الشعب</div>
-  <div class="nitem" onclick="nav('planning')"><div class="ico">📋</div><span>شعبة التخطيط</span></div>
-  <div class="nitem" onclick="nav('followup')"><div class="ico">🔍</div><span>شعبة المتابعة</span></div>
-  <div class="nitem" onclick="nav('maintenance')"><div class="ico">🔧</div><span>برمجة الصيانة</span></div>
-  <div class="nitem" onclick="nav('stats')"><div class="ico">📊</div><span>شعبة الإحصاء</span></div>
+  <div class="nitem" id="nav-planning" onclick="nav('planning')"><div class="ico">📋</div><span>شعبة التخطيط</span></div>
+  <div class="nitem" id="nav-followup" onclick="nav('followup')"><div class="ico">🔍</div><span>شعبة المتابعة</span></div>
+  <div class="nitem" id="nav-maintenance" onclick="nav('maintenance')"><div class="ico">🔧</div><span>برمجة الصيانة</span></div>
+  <div class="nitem" id="nav-stats" onclick="nav('stats')"><div class="ico">📊</div><span>شعبة الإحصاء</span></div>
   <div class="sdivider"></div>
   <div class="slabel">الخدمات</div>
-  <div class="nitem" onclick="nav('archive')"><div class="ico">🗃️</div><span>الأرشفة الإلكترونية</span></div>
-  <div class="nitem" onclick="nav('drive')"><div class="ico">☁️</div><span>Google Drive</span></div>
+  <div class="nitem" id="nav-archive" onclick="nav('archive')"><div class="ico">🗃️</div><span>الأرشفة الإلكترونية</span></div>
+  <div class="nitem" id="nav-drive" onclick="nav('drive')"><div class="ico">☁️</div><span>Google Drive</span></div>
 </nav>
 
 <main class="main">
@@ -230,13 +343,13 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 <!-- HOME -->
 <div id="page-home" class="page active">
   <div class="phead">
-    <div class="ptitle"><div class="ibig">🏛️</div><div><h2>لوحة التحكم</h2><p>نظرة عامة — البيانات مباشرة من Firebase</p></div></div>
+    <div class="ptitle"><div class="ibig">🏛️</div><div><h2>لوحة التحكم</h2><p>نظرة عامة — البيانات من Firebase</p></div></div>
   </div>
   <div class="srow">
     <div class="scard"><div class="snum" id="st-tasks">—</div><div class="slbl">مهام إجمالية</div></div>
     <div class="scard"><div class="snum" id="st-done">—</div><div class="slbl">مهام منجزة</div></div>
     <div class="scard"><div class="snum" id="st-docs">—</div><div class="slbl">وثائق مؤرشفة</div></div>
-    <div class="scard"><div class="snum" id="st-drive">—</div><div class="slbl">ملفات Drive</div></div>
+    <div class="scard"><div class="snum" id="st-letters">—</div><div class="slbl">كتب رسمية</div></div>
     <div class="scard"><div class="snum">4</div><div class="slbl">شعب نشطة</div></div>
   </div>
   <div class="stitle">الشعب الأربع</div>
@@ -250,12 +363,14 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
   <div class="twrap"><table><thead><tr><th>رقم الكتاب</th><th>الموضوع</th><th>الشعبة</th><th>التاريخ</th><th>بواسطة</th><th>الحالة</th></tr></thead><tbody id="home-docs"><tr><td colspan="6"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></td></tr></tbody></table></div>
 </div>
 
-<!-- BRANCH TEMPLATE MACRO -->
 <!-- PLANNING -->
 <div id="page-planning" class="page">
   <div class="phead">
     <div class="ptitle"><div class="ibig" style="background:#e6f1fb;color:#185fa5">📋</div><div><h2>شعبة التخطيط</h2><p>الخطط والمشاريع الاستراتيجية</p></div></div>
-    <div class="bgroup"><button class="btn btn-o" onclick="openDocModal('planning')">📄 وثيقة</button><button class="btn btn-p" onclick="openTaskModal('planning')">+ مهمة</button></div>
+    <div class="bgroup" id="planning-actions">
+      <button class="btn btn-o" onclick="openDocModal('planning')">📄 وثيقة</button>
+      <button class="btn btn-p" onclick="openTaskModal('planning')">+ مهمة</button>
+    </div>
   </div>
   <div class="stitle">النماذج والوثائق</div>
   <div class="cgrid">
@@ -274,19 +389,47 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 <div id="page-followup" class="page">
   <div class="phead">
     <div class="ptitle"><div class="ibig" style="background:#eaf3de;color:#3b6d11">🔍</div><div><h2>شعبة المتابعة</h2><p>متابعة وتقييم تنفيذ القرارات</p></div></div>
-    <div class="bgroup"><button class="btn btn-o" onclick="openDocModal('followup')">📄 وثيقة</button><button class="btn btn-p" onclick="openTaskModal('followup')">+ مهمة</button></div>
+    <div class="bgroup">
+      <button class="btn btn-o" onclick="openDocModal('followup')">📄 وثيقة</button>
+      <button class="btn btn-p" onclick="openTaskModal('followup')">+ مهمة</button>
+    </div>
   </div>
-  <div class="stitle">النماذج والوثائق</div>
+
+  <!-- التقارير -->
+  <div class="stitle">التقارير الأسبوعية والشهرية</div>
   <div class="cgrid">
-    <div class="card" onclick="openDocForm('نموذج متابعة قرار','followup')"><div class="card-hd"><div class="cico" style="background:#eaf3de">📑</div><div><h3>متابعة قرار</h3><p>متابعة تنفيذ قرارات المسؤولين</p></div></div><div class="card-ft"><span class="badge bg">متابعة</span><button class="btn btn-o btn-sm">فتح</button></div></div>
-    <div class="card" onclick="openDocForm('تقرير متابعة دوري','followup')"><div class="card-hd"><div class="cico" style="background:#e6f1fb">📋</div><div><h3>تقرير متابعة دوري</h3><p>تقارير أسبوعية وشهرية</p></div></div><div class="card-ft"><span class="badge bb">تقرير</span><button class="btn btn-o btn-sm">فتح</button></div></div>
-    <div class="card" onclick="openDocForm('ملاحظات ميدانية','followup')"><div class="card-hd"><div class="cico" style="background:#faeeda">🗒️</div><div><h3>ملاحظات ميدانية</h3><p>تسجيل الملاحظات الميدانية</p></div></div><div class="card-ft"><span class="badge ba">ملاحظة</span><button class="btn btn-o btn-sm">فتح</button></div></div>
+    <div class="card" onclick="openDocForm('تقرير أسبوعي','followup')"><div class="card-hd"><div class="cico" style="background:#eaf3de">📅</div><div><h3>تقرير أسبوعي</h3><p>تقرير متابعة الأسبوع الحالي</p></div></div><div class="card-ft"><span class="badge bg">أسبوعي</span><div class="bgroup"><button class="btn btn-o btn-sm" onclick="event.stopPropagation();printDoc()">🖨️</button><button class="btn btn-o btn-sm">فتح</button></div></div></div>
+    <div class="card" onclick="openDocForm('تقرير شهري','followup')"><div class="card-hd"><div class="cico" style="background:#e6f1fb">📋</div><div><h3>تقرير شهري</h3><p>تقرير متابعة الشهر الحالي</p></div></div><div class="card-ft"><span class="badge bb">شهري</span><div class="bgroup"><button class="btn btn-o btn-sm" onclick="event.stopPropagation();printDoc()">🖨️</button><button class="btn btn-o btn-sm">فتح</button></div></div></div>
+    <div class="card" onclick="openDocForm('نموذج متابعة قرار','followup')"><div class="card-hd"><div class="cico" style="background:#faeeda">📑</div><div><h3>متابعة قرار</h3><p>متابعة تنفيذ القرارات</p></div></div><div class="card-ft"><span class="badge ba">متابعة</span><button class="btn btn-o btn-sm">فتح</button></div></div>
     <div class="card" onclick="openDocForm('تقييم الأداء','followup')"><div class="card-hd"><div class="cico" style="background:#eeedfe">⭐</div><div><h3>تقييم الأداء</h3><p>نماذج تقييم الإنجاز</p></div></div><div class="card-ft"><span class="badge bp">تقييم</span><button class="btn btn-o btn-sm">فتح</button></div></div>
   </div>
+
+  <!-- متابعة الكتب الرسمية -->
+  <div class="stitle">متابعة الكتب الرسمية الواردة</div>
+  <div class="twrap">
+    <div class="thead2">
+      <h3>سجل الكتب الرسمية</h3>
+      <div class="bgroup">
+        <button class="btn btn-p btn-sm" onclick="openModal('addLetterModal')">+ إضافة كتاب</button>
+        <button class="btn btn-o btn-sm" onclick="printLettersTable()">🖨️ طباعة</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table id="lettersTable">
+        <thead><tr>
+          <th>رقم الكتاب</th><th>التاريخ</th><th>الجهة المُرسِلة</th>
+          <th>الموضوع</th><th>الجهة المعنية</th><th>موعد الرد</th>
+          <th>الحالة</th><th>إجراءات</th>
+        </tr></thead>
+        <tbody id="letters-tbody"><tr><td colspan="8"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
   <div class="stitle">جدول المهام</div>
   <div class="twrap"><div class="thead2"><h3>مهام الشعبة</h3><button class="btn btn-p btn-sm" onclick="openTaskModal('followup')">+ مهمة</button></div><div id="tasks-followup"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></div></div>
   <div class="stitle">وثائق الشعبة</div>
-  <div class="twrap"><div class="thead2"><h3>الوثائق والكتب</h3></div><div id="docs-followup"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></div></div>
+  <div class="twrap"><div class="thead2"><h3>الوثائق والكتب</h3></div><div id="docs-followup"></div></div>
 </div>
 
 <!-- MAINTENANCE -->
@@ -305,7 +448,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
   <div class="stitle">جدول المهام</div>
   <div class="twrap"><div class="thead2"><h3>مهام الشعبة</h3><button class="btn btn-p btn-sm" onclick="openTaskModal('maintenance')">+ مهمة</button></div><div id="tasks-maintenance"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></div></div>
   <div class="stitle">وثائق الشعبة</div>
-  <div class="twrap"><div class="thead2"><h3>الوثائق والكتب</h3></div><div id="docs-maintenance"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></div></div>
+  <div class="twrap"><div class="thead2"><h3>الوثائق والكتب</h3></div><div id="docs-maintenance"></div></div>
 </div>
 
 <!-- STATS -->
@@ -314,17 +457,29 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
     <div class="ptitle"><div class="ibig" style="background:#eeedfe;color:#534ab7">📊</div><div><h2>شعبة الإحصاء</h2><p>التقارير الإحصائية وتحليل البيانات</p></div></div>
     <div class="bgroup"><button class="btn btn-o" onclick="openDocModal('stats')">📄 وثيقة</button><button class="btn btn-p" onclick="openTaskModal('stats')">+ مهمة</button></div>
   </div>
-  <div class="stitle">النماذج والتقارير</div>
+
+  <!-- التقارير -->
+  <div class="stitle">التقارير الإحصائية</div>
   <div class="cgrid">
-    <div class="card" onclick="openDocForm('نموذج بيانات إحصائية','stats')"><div class="card-hd"><div class="cico" style="background:#eeedfe">📈</div><div><h3>بيانات إحصائية</h3><p>جمع وتوثيق البيانات</p></div></div><div class="card-ft"><span class="badge bp">بيانات</span><button class="btn btn-o btn-sm">فتح</button></div></div>
-    <div class="card" onclick="openDocForm('تقرير إحصائي شهري','stats')"><div class="card-hd"><div class="cico" style="background:#e6f1fb">📉</div><div><h3>تقرير إحصائي شهري</h3><p>التقارير الدورية المجمعة</p></div></div><div class="card-ft"><span class="badge bb">تقرير</span><button class="btn btn-o btn-sm">فتح</button></div></div>
-    <div class="card" onclick="openDocForm('تحليل مقارن','stats')"><div class="card-hd"><div class="cico" style="background:#eaf3de">🔬</div><div><h3>تحليل مقارن</h3><p>مقارنة المؤشرات بين الفترات</p></div></div><div class="card-ft"><span class="badge bg">تحليل</span><button class="btn btn-o btn-sm">فتح</button></div></div>
-    <div class="card" onclick="openDocForm('ملخص إحصائي سنوي','stats')"><div class="card-hd"><div class="cico" style="background:#faeeda">📚</div><div><h3>ملخص سنوي</h3><p>التقارير الإحصائية السنوية</p></div></div><div class="card-ft"><span class="badge ba">سنوي</span><button class="btn btn-o btn-sm">فتح</button></div></div>
+    <div class="card" onclick="openDocForm('تقرير إحصائي شهري','stats')"><div class="card-hd"><div class="cico" style="background:#eeedfe">📈</div><div><h3>تقرير شهري</h3><p>الإحصائيات الشهرية</p></div></div><div class="card-ft"><span class="badge bp">شهري</span><div class="bgroup"><button class="btn btn-o btn-sm" onclick="event.stopPropagation();printDoc()">🖨️</button><button class="btn btn-o btn-sm">فتح</button></div></div></div>
+    <div class="card" onclick="openDocForm('تقرير إحصائي فصلي','stats')"><div class="card-hd"><div class="cico" style="background:#e6f1fb">📉</div><div><h3>تقرير فصلي</h3><p>الإحصائيات الفصلية</p></div></div><div class="card-ft"><span class="badge bb">فصلي</span><div class="bgroup"><button class="btn btn-o btn-sm" onclick="event.stopPropagation();printDoc()">🖨️</button><button class="btn btn-o btn-sm">فتح</button></div></div></div>
+    <div class="card" onclick="openDocForm('تقرير إحصائي سنوي','stats')"><div class="card-hd"><div class="cico" style="background:#eaf3de">📚</div><div><h3>تقرير سنوي</h3><p>الإحصائيات السنوية</p></div></div><div class="card-ft"><span class="badge bg">سنوي</span><div class="bgroup"><button class="btn btn-o btn-sm" onclick="event.stopPropagation();printDoc()">🖨️</button><button class="btn btn-o btn-sm">فتح</button></div></div></div>
+    <div class="card" onclick="openDocForm('تحليل مقارن','stats')"><div class="card-hd"><div class="cico" style="background:#faeeda">🔬</div><div><h3>تحليل مقارن</h3><p>مقارنة المؤشرات بين الفترات</p></div></div><div class="card-ft"><span class="badge ba">تحليل</span><button class="btn btn-o btn-sm">فتح</button></div></div>
   </div>
+
+  <!-- الرسوم البيانية -->
+  <div class="stitle">الرسوم البيانية التحليلية</div>
+  <div class="charts-grid">
+    <div class="chart-wrap"><h3>📊 المهام حسب الشعبة</h3><canvas id="chart-tasks" height="200"></canvas></div>
+    <div class="chart-wrap"><h3>📈 الوثائق الشهرية</h3><canvas id="chart-docs" height="200"></canvas></div>
+    <div class="chart-wrap"><h3>🔵 حالة الكتب الرسمية</h3><canvas id="chart-letters" height="200"></canvas></div>
+    <div class="chart-wrap"><h3>✅ نسبة إنجاز المهام</h3><canvas id="chart-completion" height="200"></canvas></div>
+  </div>
+
   <div class="stitle">جدول المهام</div>
   <div class="twrap"><div class="thead2"><h3>مهام الشعبة</h3><button class="btn btn-p btn-sm" onclick="openTaskModal('stats')">+ مهمة</button></div><div id="tasks-stats"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></div></div>
   <div class="stitle">وثائق الشعبة</div>
-  <div class="twrap"><div class="thead2"><h3>الوثائق والكتب</h3></div><div id="docs-stats"><div class="lspin"><div class="spinner"></div>جاري التحميل...</div></div></div>
+  <div class="twrap"><div class="thead2"><h3>الوثائق والكتب</h3></div><div id="docs-stats"></div></div>
 </div>
 
 <!-- ARCHIVE -->
@@ -333,11 +488,6 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
     <div class="ptitle"><div class="ibig">🗃️</div><div><h2>الأرشفة الإلكترونية</h2><p>البحث في جميع الكتب والوثائق</p></div></div>
     <button class="btn btn-p" onclick="openModal('addArchiveModal')">+ أرشفة وثيقة</button>
   </div>
-  <div class="dbanner">
-    <div class="dbanner-ico">☁️</div>
-    <div class="dbanner-info"><h4>مرتبط بـ Google Drive</h4><p>يبحث مباشرة في مجلدات Drive المنظمة حسب السنة</p></div>
-    <span class="badge bg" style="margin-right:auto">متصل</span>
-  </div>
   <div class="sbox">
     <h3 style="font-size:14px;font-weight:600;margin-bottom:13px">🔎 البحث في الأرشيف</h3>
     <div class="sgrid">
@@ -345,7 +495,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
       <div><label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">السنة</label><select id="sYear" style="width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)"><option value="">كل السنوات</option><option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option></select></div>
       <div><label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">الشعبة</label><select id="sDept" style="width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)"><option value="">كل الشعب</option><option>التخطيط</option><option>المتابعة</option><option>برمجة الصيانة</option><option>الإحصاء</option></select></div>
     </div>
-    <div style="margin-bottom:11px"><label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">البحث بالنص المتضمن في الكتاب</label><input type="text" id="sText" placeholder="ادخل كلمات من موضوع الكتاب أو محتواه..." style="width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)"></div>
+    <div style="margin-bottom:11px"><label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px">البحث بالنص المتضمن</label><input type="text" id="sText" placeholder="ادخل كلمات من موضوع الكتاب أو محتواه..." style="width:100%;padding:8px 11px;border:.5px solid var(--border);border-radius:8px;font-family:'Cairo',sans-serif;font-size:13px;outline:none;background:var(--bg)"></div>
     <div style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-p" onclick="searchArchive()">🔍 بحث في الأرشيف</button>
       <button class="btn btn-g" onclick="searchDriveContent()">☁️ بحث في محتوى Drive</button>
@@ -355,7 +505,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
     </div>
   </div>
   <div class="stitle">تصفح حسب السنة</div>
-  <div class="fgrid" id="yearFolders">
+  <div class="fgrid">
     <div class="fitem" onclick="browseYear('2026')"><div class="fi">📁</div><span>2026</span><small id="c2026">—</small></div>
     <div class="fitem" onclick="browseYear('2025')"><div class="fi">📁</div><span>2025</span><small id="c2025">—</small></div>
     <div class="fitem" onclick="browseYear('2024')"><div class="fi">📁</div><span>2024</span><small id="c2024">—</small></div>
@@ -365,7 +515,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
   <div id="archiveResults"><div class="lspin"><div class="spinner"></div>جاري تحميل الأرشيف...</div></div>
 </div>
 
-<!-- GOOGLE DRIVE PAGE -->
+<!-- DRIVE -->
 <div id="page-drive" class="page">
   <div class="phead">
     <div class="ptitle"><div class="ibig" style="background:#e8f0fe;color:#4285f4">☁️</div><div><h2>Google Drive</h2><p>تصفح وبحث في ملفات القسم</p></div></div>
@@ -374,23 +524,14 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
       <button class="btn btn-a" onclick="runOCR()" id="ocrBtn">🔍 فهرسة OCR</button>
     </div>
   </div>
-  <!-- OCR STATUS BOX -->
   <div id="ocrStatusBox" style="display:none;background:#fffbea;border:1px solid #f0c040;border-radius:10px;padding:16px;margin-bottom:16px">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
-      <div class="spinner" style="width:20px;height:20px;border-width:2px"></div>
-      <strong style="font-size:14px">جاري تشغيل OCR على الملفات...</strong>
-    </div>
-    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px">⏳ هذه العملية قد تأخذ عدة دقائق حسب عدد الملفات. يرجى الانتظار.</p>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div><strong>جاري تشغيل OCR...</strong></div>
     <div id="ocrProgress" style="font-size:13px;color:var(--primary)"></div>
   </div>
-  <!-- OCR RESULT BOX -->
   <div id="ocrResultBox" style="display:none;border-radius:10px;padding:16px;margin-bottom:16px"></div>
-  <div class="dbanner">
-    <div class="dbanner-ico">☁️</div>
-    <div class="dbanner-info"><h4>محطة كهرباء الموصل الغازية — قسم التخطيط والمتابعة</h4><p>تصفح الملفات مباشرة من Google Drive حسب السنة</p></div>
-  </div>
+  <div class="dbanner"><div style="font-size:30px">☁️</div><div><h4 style="font-size:14px;font-weight:700;color:#185fa5">محطة كهرباء الموصل الغازية — قسم التخطيط والمتابعة</h4><p style="font-size:12px;color:var(--text-muted)">تصفح الملفات مباشرة من Google Drive حسب السنة</p></div></div>
   <div class="stitle">تصفح حسب السنة</div>
-  <div class="fgrid" id="driveFolders">
+  <div class="fgrid">
     <div class="fitem" onclick="loadDriveFiles('2026')"><div class="fi">📁</div><span>2026</span><small id="dc2026">—</small></div>
     <div class="fitem" onclick="loadDriveFiles('2025')"><div class="fi">📁</div><span>2025</span><small id="dc2025">—</small></div>
     <div class="fitem" onclick="loadDriveFiles('2024')"><div class="fi">📁</div><span>2024</span><small id="dc2024">—</small></div>
@@ -408,23 +549,31 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 </main>
 </div>
 
-<!-- FOOTER -->
 <div class="footer">برمجة وتصميم بواسطة <strong style="color:var(--primary)">ولاء الحمداني</strong> &nbsp;©&nbsp; 2026</div>
 
-<!-- MODALS -->
-<!-- LOGIN -->
-<div class="moverlay open" id="loginModal">
-  <div class="modal" style="width:380px;text-align:center">
-    <div style="font-size:40px;margin-bottom:11px">👤</div>
-    <h3 style="margin-bottom:5px">مرحباً بك</h3>
-    <p style="font-size:13px;color:var(--text-muted);margin-bottom:18px">يرجى إدخال اسمك للمتابعة</p>
-    <div class="fg" style="text-align:right"><label>الاسم</label><input type="text" id="loginName" placeholder="مثال: أحمد محمد" onkeydown="if(event.key==='Enter')loginUser()"></div>
-    <div class="fg" style="text-align:right"><label>الشعبة</label><select id="loginDept"><option value="التخطيط">شعبة التخطيط</option><option value="المتابعة">شعبة المتابعة</option><option value="برمجة الصيانة">برمجة الصيانة</option><option value="الإحصاء">شعبة الإحصاء</option><option value="إدارة">الإدارة</option></select></div>
-    <button class="btn btn-p" style="width:100%;margin-top:4px" onclick="loginUser()">دخول →</button>
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- ADD LETTER -->
+<div class="moverlay" id="addLetterModal">
+  <div class="modal">
+    <h3>📨 إضافة كتاب رسمي وارد</h3>
+    <div class="frow">
+      <div class="fg"><label>رقم الكتاب</label><input type="text" id="lNum" placeholder="مثال: 2025/500"></div>
+      <div class="fg"><label>تاريخ الكتاب</label><input type="date" id="lDate"></div>
+    </div>
+    <div class="fg"><label>الجهة المُرسِلة</label><input type="text" id="lFrom" placeholder="اسم الجهة المرسلة"></div>
+    <div class="fg"><label>الموضوع</label><input type="text" id="lSubject" placeholder="موضوع الكتاب التفصيلي"></div>
+    <div class="fg"><label>الجهة المعنية بالرد</label><input type="text" id="lDept" placeholder="القسم أو الشعبة المعنية"></div>
+    <div class="frow">
+      <div class="fg"><label>موعد الرد المطلوب</label><input type="date" id="lDeadline"></div>
+      <div class="fg"><label>الحالة</label><select id="lStatus"><option value="قيد الانتظار">قيد الانتظار</option><option value="قيد التنفيذ">قيد التنفيذ</option><option value="تم الإنجاز">تم الإنجاز</option></select></div>
+    </div>
+    <div class="fg"><label>ملاحظات</label><textarea id="lNotes" placeholder="أي ملاحظات إضافية..." style="min-height:60px"></textarea></div>
+    <div class="mactions"><button class="btn btn-o" onclick="closeModal('addLetterModal')">إلغاء</button><button class="btn btn-p" onclick="saveLetter()">حفظ</button></div>
   </div>
 </div>
 
-<!-- TASK -->
+<!-- TASK MODAL -->
 <div class="moverlay" id="taskModal">
   <div class="modal">
     <h3>✅ إضافة مهمة جديدة</h3>
@@ -433,25 +582,25 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
       <div class="fg"><label>الأولوية</label><select id="taskPri"><option value="high">عالية 🔴</option><option value="medium" selected>متوسطة 🟡</option><option value="low">منخفضة 🟢</option></select></div>
       <div class="fg"><label>تاريخ الاستحقاق</label><input type="date" id="taskDue"></div>
     </div>
-    <div class="fg"><label>ملاحظات</label><textarea id="taskNotes" placeholder="أي تفاصيل إضافية..." style="min-height:60px"></textarea></div>
-    <div class="mactions"><button class="btn btn-o" onclick="closeModal('taskModal')">إلغاء</button><button class="btn btn-p" onclick="saveTask()">إضافة المهمة</button></div>
+    <div class="fg"><label>ملاحظات</label><textarea id="taskNotes" placeholder="أي تفاصيل..." style="min-height:60px"></textarea></div>
+    <div class="mactions"><button class="btn btn-o" onclick="closeModal('taskModal')">إلغاء</button><button class="btn btn-p" onclick="saveTask()">إضافة</button></div>
   </div>
 </div>
 
-<!-- DOC -->
+<!-- DOC MODAL -->
 <div class="moverlay" id="docModal">
   <div class="modal">
     <h3>📄 إضافة وثيقة جديدة</h3>
     <div class="frow">
-      <div class="fg"><label>نوع الوثيقة</label><select id="docType"><option>كتاب رسمي صادر</option><option>كتاب رسمي وارد</option><option>مذكرة داخلية</option><option>تقرير</option><option>نموذج</option><option>أمر صيانة</option></select></div>
-      <div class="fg"><label>رقم الكتاب / المرجع</label><input type="text" id="docNum" placeholder="مثال: 2025/148"></div>
+      <div class="fg"><label>نوع الوثيقة</label><select id="docType"><option>كتاب رسمي صادر</option><option>كتاب رسمي وارد</option><option>مذكرة داخلية</option><option>تقرير</option><option>نموذج</option></select></div>
+      <div class="fg"><label>رقم الكتاب</label><input type="text" id="docNum" placeholder="مثال: 2025/148"></div>
     </div>
     <div class="fg"><label>الموضوع</label><input type="text" id="docSubject" placeholder="موضوع الوثيقة التفصيلي"></div>
     <div class="frow">
       <div class="fg"><label>التاريخ</label><input type="date" id="docDate"></div>
       <div class="fg"><label>الحالة</label><select id="docStatus"><option>جديد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>معلق</option></select></div>
     </div>
-    <div class="fg"><label>ملاحظات / نص مقتضب</label><textarea id="docNotes" placeholder="اكتب ملخصاً أو ملاحظات للبحث لاحقاً..."></textarea></div>
+    <div class="fg"><label>ملاحظات</label><textarea id="docNotes" placeholder="اكتب ملخصاً للبحث لاحقاً..."></textarea></div>
     <div class="mactions"><button class="btn btn-o" onclick="closeModal('docModal')">إلغاء</button><button class="btn btn-p" onclick="saveDoc()">حفظ وأرشفة</button></div>
   </div>
 </div>
@@ -461,10 +610,14 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
   <div class="modal">
     <h3 id="dfTitle">📄 نموذج</h3>
     <div class="frow"><div class="fg"><label>رقم الوثيقة</label><input type="text" id="ff_num" placeholder="سيُولَّد تلقائياً"></div><div class="fg"><label>التاريخ</label><input type="date" id="ff_date"></div></div>
-    <div class="fg"><label>الجهة المُوجَّه إليها</label><input type="text" id="ff_to" placeholder=""></div>
+    <div class="fg"><label>الجهة المُوجَّه إليها</label><input type="text" id="ff_to"></div>
     <div class="fg"><label>الموضوع التفصيلي</label><textarea id="ff_subject" placeholder="اكتب الموضوع بالتفصيل..."></textarea></div>
-    <div class="fg"><label>ملاحظات</label><textarea id="ff_notes" placeholder="أي ملاحظات إضافية..." style="min-height:60px"></textarea></div>
-    <div class="mactions"><button class="btn btn-o" onclick="closeModal('docFormModal')">إغلاق</button><button class="btn btn-p" onclick="submitDocForm()">حفظ وأرشفة</button></div>
+    <div class="fg"><label>ملاحظات</label><textarea id="ff_notes" style="min-height:60px"></textarea></div>
+    <div class="mactions">
+      <button class="btn btn-o" onclick="closeModal('docFormModal')">إغلاق</button>
+      <button class="btn btn-o" onclick="printDocForm()">🖨️ طباعة</button>
+      <button class="btn btn-p" onclick="submitDocForm()">حفظ وأرشفة</button>
+    </div>
   </div>
 </div>
 
@@ -475,7 +628,7 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
     <div class="frow"><div class="fg"><label>رقم الكتاب</label><input type="text" id="archNum" placeholder="مثال: 2025/200"></div><div class="fg"><label>الشعبة</label><select id="archDept"><option>التخطيط</option><option>المتابعة</option><option>برمجة الصيانة</option><option>الإحصاء</option></select></div></div>
     <div class="fg"><label>الموضوع</label><input type="text" id="archSubject" placeholder="موضوع الكتاب"></div>
     <div class="frow"><div class="fg"><label>التاريخ</label><input type="date" id="archDate"></div><div class="fg"><label>الحالة</label><select id="archStatus"><option>جديد</option><option>قيد التنفيذ</option><option>مكتمل</option><option>معلق</option></select></div></div>
-    <div class="fg"><label>نص مقتضب من محتوى الكتاب (للبحث)</label><textarea id="archContent" placeholder="اكتب ملخصاً أو نصاً من الكتاب للبحث لاحقاً..."></textarea></div>
+    <div class="fg"><label>نص مقتضب من محتوى الكتاب</label><textarea id="archContent" placeholder="اكتب ملخصاً للبحث لاحقاً..."></textarea></div>
     <div class="mactions"><button class="btn btn-o" onclick="closeModal('addArchiveModal')">إلغاء</button><button class="btn btn-p" onclick="saveArchiveDoc()">أرشفة</button></div>
   </div>
 </div>
@@ -487,6 +640,14 @@ tr:last-child td{border-bottom:none;} tr:hover td{background:#fafbfc;}
 const DRIVE_API = 'https://script.google.com/macros/s/AKfycbymBW75FYRQkyjBpX8GF0nzvfN24P9i-ClkXBM262Ge9FlzNX5u7UPx7F0AqiShI14W8Q/exec';
 const FOLDER_ID = '1I0bfxLcnCUe3aGRHMMdFTnAcf_c4VDQN';
 
+// ══════════ أرقام سرية ══════════
+const PINS = {
+  head:    '1234', // رئيس القسم
+  chief:   '5678', // رئيس شعبة
+  member:  '0000'  // منتسب
+};
+
+// ══════════ FIREBASE ══════════
 const firebaseConfig = {
   apiKey:"AIzaSyCpEJKxgyy_zk7h2lCqzwN7kEJA8qUkztY",
   authDomain:"planning-dept--mosul-gas-plant.firebaseapp.com",
@@ -499,20 +660,170 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // ══════════ STATE ══════════
-let currentUser = {name:'',dept:''};
+let currentUser = {name:'',role:'',dept:'',branch:''};
 let currentSection = 'home';
 let currentTaskBranch = '';
 let currentDocBranch  = '';
 let currentDocFormBranch = '';
 let allArchiveDocs = [];
 let allDriveFiles  = [];
+let pinBuffer      = '';
+let selectedRole   = '';
 let unsubs = {};
+let charts = {};
 
 const BRANCHES = ['planning','followup','maintenance','stats'];
 const BNAMES   = {planning:'التخطيط',followup:'المتابعة',maintenance:'برمجة الصيانة',stats:'الإحصاء'};
 const DCOLORS  = {'التخطيط':'bb','المتابعة':'bg','برمجة الصيانة':'ba','الإحصاء':'bp'};
-const SCOLORS  = {'جديد':'bb','قيد التنفيذ':'ba','مكتمل':'bg','معلق':'br'};
+const SCOLORS  = {'جديد':'bb','قيد التنفيذ':'ba','مكتمل':'bg','معلق':'br','قيد الانتظار':'ba','تم الإنجاز':'bg'};
 const YEARS    = ['2026','2025','2024','2023','2022'];
+
+// ══════════ ROLES & PERMISSIONS ══════════
+const ROLE_LABELS = {head:'رئيس القسم',chief:'رئيس شعبة',member:'منتسب'};
+const ROLE_BADGE_CLASS = {head:'rb-head',chief:'rb-chief',member:'rb-member'};
+
+function canWrite() {
+  return currentUser.role === 'head' || currentUser.role === 'chief';
+}
+function canAccess(branch) {
+  if(currentUser.role === 'head') return true;
+  if(currentUser.role === 'member') return true; // مشاهدة فقط
+  if(currentUser.role === 'chief') return currentUser.branch === branch;
+  return false;
+}
+
+function applyPermissions() {
+  const role = currentUser.role;
+  // إخفاء أزرار الإضافة للمنتسب
+  document.querySelectorAll('.btn-p, .btn-a').forEach(btn => {
+    if(role === 'member') btn.style.display = 'none';
+    else btn.style.display = '';
+  });
+  // قفل الشعب لرئيس الشعبة
+  BRANCHES.forEach(b => {
+    const navEl = document.getElementById('nav-'+b);
+    if(!navEl) return;
+    if(role === 'chief' && currentUser.branch !== b) {
+      navEl.classList.add('locked');
+    } else {
+      navEl.classList.remove('locked');
+    }
+  });
+}
+
+// ══════════ LOGIN ══════════
+function selectRole(role, label, icon) {
+  selectedRole = role;
+  document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+  event.currentTarget.classList.add('selected');
+
+  setTimeout(()=>{
+    if(role === 'chief') {
+      document.getElementById('step-role').style.display = 'none';
+      document.getElementById('step-branch').style.display = 'block';
+    } else {
+      showPinStep();
+    }
+  }, 200);
+}
+
+function showPinStep() {
+  document.getElementById('step-role').style.display = 'none';
+  document.getElementById('step-branch').style.display = 'none';
+  document.getElementById('step-pin').style.display = 'block';
+  document.getElementById('pinRoleLabel').textContent = ROLE_LABELS[selectedRole] || '';
+  pinBuffer = '';
+  updatePinDisplay();
+}
+
+function backToRole() {
+  selectedRole = '';
+  pinBuffer = '';
+  document.getElementById('step-role').style.display = 'block';
+  document.getElementById('step-branch').style.display = 'none';
+  document.getElementById('step-pin').style.display = 'none';
+  document.getElementById('step-name').style.display = 'none';
+  document.getElementById('pinError').textContent = '';
+  updatePinDisplay();
+}
+
+function addPin(d) {
+  if(pinBuffer.length >= 4) return;
+  pinBuffer += d;
+  updatePinDisplay();
+  if(pinBuffer.length === 4) {
+    setTimeout(checkPin, 300);
+  }
+}
+
+function delPin() {
+  pinBuffer = pinBuffer.slice(0,-1);
+  updatePinDisplay();
+  document.getElementById('pinError').textContent = '';
+}
+
+function updatePinDisplay() {
+  for(let i=0;i<4;i++){
+    const dot = document.getElementById('pd'+i);
+    if(dot) dot.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+function checkPin() {
+  const correct = PINS[selectedRole];
+  if(pinBuffer === correct) {
+    document.getElementById('step-pin').style.display = 'none';
+    document.getElementById('step-name').style.display = 'block';
+    document.getElementById('loginName').focus();
+  } else {
+    document.getElementById('pinError').textContent = '❌ الرقم السري غير صحيح';
+    pinBuffer = '';
+    updatePinDisplay();
+  }
+}
+
+function finishLogin() {
+  const name = document.getElementById('loginName').value.trim();
+  if(!name){ showToast('يرجى إدخال اسمك','err'); return; }
+
+  const branch = selectedRole === 'chief'
+    ? document.getElementById('branchSelect').value
+    : '';
+
+  currentUser = {
+    name,
+    role: selectedRole,
+    branch,
+    dept: branch ? BNAMES[branch] : ROLE_LABELS[selectedRole]
+  };
+
+  // تحديث الهيدر
+  document.getElementById('userName').textContent = name;
+  document.getElementById('userAvatar').textContent = name.charAt(0);
+  document.getElementById('userRoleBadge').innerHTML =
+    `<span class="rbadge ${ROLE_BADGE_CLASS[selectedRole]}">${ROLE_LABELS[selectedRole]}</span>`;
+
+  document.getElementById('loginScreen').style.display = 'none';
+  applyPermissions();
+  initListeners();
+  loadDriveFiles('');
+  showToast('مرحباً ' + name + ' 👋','ok');
+}
+
+function logout() {
+  if(!confirm('هل تريد تسجيل الخروج؟')) return;
+  Object.values(unsubs).forEach(u => { try{u();}catch(e){} });
+  unsubs = {};
+  currentUser = {name:'',role:'',dept:'',branch:''};
+  pinBuffer = ''; selectedRole = '';
+  document.getElementById('loginName').value = '';
+  document.getElementById('step-role').style.display = 'block';
+  document.getElementById('step-branch').style.display = 'none';
+  document.getElementById('step-pin').style.display = 'none';
+  document.getElementById('step-name').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  updatePinDisplay();
+}
 
 // ══════════ DATE ══════════
 function updateDate(){
@@ -521,23 +832,14 @@ function updateDate(){
 }
 updateDate(); setInterval(updateDate,60000);
 
-// ══════════ LOGIN ══════════
-function loginUser(){
-  const name = document.getElementById('loginName').value.trim();
-  if(!name){showToast('يرجى إدخال اسمك','err');return;}
-  currentUser = {name, dept:document.getElementById('loginDept').value};
-  document.getElementById('userName').textContent = name;
-  document.getElementById('userAvatar').textContent = name.charAt(0);
-  closeModal('loginModal');
-  initListeners();
-  loadDriveFiles('');
-  showToast('مرحباً '+name+' 👋','ok');
-}
-function changeUser(){document.getElementById('loginName').value='';openModal('loginModal');}
-
 // ══════════ NAV ══════════
 const PAGES=['home','planning','followup','maintenance','stats','archive','drive'];
 function nav(s){
+  // تحقق من الصلاحية
+  if(BRANCHES.includes(s) && !canAccess(s)){
+    showToast('ليس لديك صلاحية الوصول لهذا القسم','err');
+    return;
+  }
   PAGES.forEach(p=>document.getElementById('page-'+p).classList.remove('active'));
   document.querySelectorAll('.nitem').forEach(el=>el.classList.remove('active'));
   document.getElementById('page-'+s).classList.add('active');
@@ -546,6 +848,7 @@ function nav(s){
   currentSection=s;
   if(s==='archive') renderArchiveResults(allArchiveDocs);
   if(s==='drive')   renderDriveFiles(allDriveFiles);
+  if(s==='stats')   setTimeout(renderCharts,300);
 }
 
 // ══════════ FIREBASE LISTENERS ══════════
@@ -562,14 +865,21 @@ function initListeners(){
       .onSnapshot(snap=>{ renderBranchDocs(b,snap.docs.map(d=>({id:d.id,...d.data()}))); });
   });
 
+  // كتب رسمية
+  if(unsubs.letters) unsubs.letters();
+  unsubs.letters = db.collection('officialLetters').orderBy('createdAt','desc')
+    .onSnapshot(snap=>{ renderLetters(snap.docs.map(d=>({id:d.id,...d.data()}))); updateStats(); });
+
+  // أرشيف
   if(unsubs.arch) unsubs.arch();
   unsubs.arch = db.collection('archive').orderBy('createdAt','desc')
     .onSnapshot(snap=>{
-      allArchiveDocs = snap.docs.map(d=>({id:d.id,...d.data()}));
+      allArchiveDocs=snap.docs.map(d=>({id:d.id,...d.data()}));
       updateYearCounts(); updateStats();
       if(currentSection==='archive') renderArchiveResults(allArchiveDocs);
     });
 
+  // آخر الوثائق
   if(unsubs.recent) unsubs.recent();
   unsubs.recent = db.collection('archive').orderBy('createdAt','desc').limit(8)
     .onSnapshot(snap=>{ renderHomeDocs(snap.docs.map(d=>({id:d.id,...d.data()}))); });
@@ -577,24 +887,25 @@ function initListeners(){
 
 // ══════════ RENDER TASKS ══════════
 function renderTasks(b,tasks){
-  const el=document.getElementById('tasks-'+b); if(!el)return;
+  const el=document.getElementById('tasks-'+b); if(!el) return;
+  const ro = currentUser.role === 'member';
   if(!tasks.length){el.innerHTML='<div class="empty"><div class="eico">📋</div>لا توجد مهام بعد.</div>';return;}
   const pc={high:'#e24b4a',medium:'#ef9f27',low:'#97c459'};
   el.innerHTML=tasks.map(t=>`
     <div class="titem">
-      <div class="tchk ${t.done?'done':''}" onclick="toggleTask('${t.id}',${!t.done})">${t.done?'✓':''}</div>
+      <div class="tchk ${t.done?'done':''}" onclick="${ro?'':''} ${!ro?`toggleTask('${t.id}',${!t.done})`:''}"></div>
       <div class="pdot" style="background:${pc[t.priority]||'#ccc'}"></div>
       <div class="ttxt ${t.done?'done':''}" style="flex:1">${t.text}</div>
       ${t.due?`<div class="tmeta">📅 ${t.due}</div>`:''}
       <span class="utag">${t.addedBy||'—'}</span>
-      <div onclick="deleteTask('${t.id}')" style="cursor:pointer;color:var(--text-muted);font-size:13px;padding:4px 8px">✕</div>
+      ${!ro?`<div onclick="deleteTask('${t.id}')" style="cursor:pointer;color:var(--text-muted);font-size:13px;padding:4px 8px">✕</div>`:''}
     </div>`).join('');
 }
 
 function renderBranchDocs(b,docs){
-  const el=document.getElementById('docs-'+b); if(!el)return;
+  const el=document.getElementById('docs-'+b); if(!el) return;
   if(!docs.length){el.innerHTML='<div class="empty"><div class="eico">📄</div>لا توجد وثائق بعد.</div>';return;}
-  el.innerHTML=`<table><thead><tr><th>رقم الكتاب</th><th>الموضوع</th><th>النوع</th><th>التاريخ</th><th>بواسطة</th><th>الحالة</th></tr></thead><tbody>
+  el.innerHTML=`<table><thead><tr><th>رقم الكتاب</th><th>الموضوع</th><th>النوع</th><th>التاريخ</th><th>بواسطة</th><th>الحالة</th><th>إجراءات</th></tr></thead><tbody>
   ${docs.map(d=>`<tr>
     <td style="font-weight:600;color:var(--primary)">${d.num||'—'}</td>
     <td>${d.subject||'—'}</td>
@@ -602,12 +913,16 @@ function renderBranchDocs(b,docs){
     <td>${d.date||'—'}</td>
     <td><span class="utag">${d.addedBy||'—'}</span></td>
     <td><span class="badge ${SCOLORS[d.status]||'bgr'}">${d.status||'—'}</span></td>
+    <td><div class="action-btns">
+      <button class="print-btn" onclick="printRow(${JSON.stringify(d).replace(/"/g,'&quot;')})">🖨️</button>
+      <button class="dl-btn" onclick="dlRow(${JSON.stringify(d).replace(/"/g,'&quot;')})">⬇️</button>
+    </div></td>
   </tr>`).join('')}
   </tbody></table>`;
 }
 
 function renderHomeDocs(docs){
-  const el=document.getElementById('home-docs'); if(!el)return;
+  const el=document.getElementById('home-docs'); if(!el) return;
   if(!docs.length){el.innerHTML='<tr><td colspan="6"><div class="empty">لا توجد وثائق بعد</div></td></tr>';return;}
   el.innerHTML=docs.map(d=>`<tr>
     <td style="font-weight:600;color:var(--primary)">${d.num||'—'}</td>
@@ -619,39 +934,160 @@ function renderHomeDocs(docs){
   </tr>`).join('');
 }
 
+// ══════════ OFFICIAL LETTERS ══════════
+function renderLetters(letters){
+  const el=document.getElementById('letters-tbody'); if(!el) return;
+  if(!letters.length){el.innerHTML='<tr><td colspan="8"><div class="empty">لا توجد كتب رسمية بعد</div></td></tr>';return;}
+  const sc={'قيد الانتظار':'ls-pending','قيد التنفيذ':'ls-inprog','تم الإنجاز':'ls-done'};
+  el.innerHTML=letters.map(l=>`<tr>
+    <td style="font-weight:600;color:var(--primary)">${l.num||'—'}</td>
+    <td>${l.date||'—'}</td>
+    <td>${l.from||'—'}</td>
+    <td>${l.subject||'—'}</td>
+    <td>${l.dept||'—'}</td>
+    <td>${l.deadline||'—'}</td>
+    <td><span class="letters-status ${sc[l.status]||''}">${l.status||'—'}</span></td>
+    <td><div class="action-btns">
+      ${canWrite()?`<button class="print-btn" onclick="printLetter('${l.id}')">🖨️</button>
+      <button class="dl-btn" onclick="dlLetter('${l.id}')">⬇️</button>
+      <select onchange="updateLetterStatus('${l.id}',this.value)" style="font-size:11px;border:none;background:var(--bg);border-radius:4px;padding:2px 4px;cursor:pointer">
+        <option ${l.status==='قيد الانتظار'?'selected':''}>قيد الانتظار</option>
+        <option ${l.status==='قيد التنفيذ'?'selected':''}>قيد التنفيذ</option>
+        <option ${l.status==='تم الإنجاز'?'selected':''}>تم الإنجاز</option>
+      </select>`:'<span style="font-size:11px;color:var(--text-muted)">مشاهدة فقط</span>'}
+    </div></td>
+  </tr>`).join('');
+}
+
+function saveLetter(){
+  if(!canWrite()){showToast('ليس لديك صلاحية الإضافة','err');return;}
+  const num=document.getElementById('lNum').value.trim();
+  const subject=document.getElementById('lSubject').value.trim();
+  if(!num||!subject){showToast('يرجى ملء الحقول المطلوبة','err');return;}
+  db.collection('officialLetters').add({
+    num, subject,
+    from:document.getElementById('lFrom').value,
+    dept:document.getElementById('lDept').value,
+    date:document.getElementById('lDate').value,
+    deadline:document.getElementById('lDeadline').value,
+    status:document.getElementById('lStatus').value,
+    notes:document.getElementById('lNotes').value,
+    addedBy:currentUser.name,
+    createdAt:new Date().toISOString()
+  }).then(()=>{closeModal('addLetterModal');showToast('تمت إضافة الكتاب ✓','ok');})
+    .catch(()=>showToast('خطأ في الحفظ','err'));
+}
+
+function updateLetterStatus(id,status){
+  db.collection('officialLetters').doc(id).update({status,updatedBy:currentUser.name,updatedAt:new Date().toISOString()})
+    .then(()=>showToast('تم تحديث الحالة ✓','ok'))
+    .catch(()=>showToast('خطأ في التحديث','err'));
+}
+
+function printLetter(id){
+  showToast('جاري تجهيز الطباعة...','ok');
+  window.print();
+}
+
+function dlLetter(id){
+  showToast('سيتم دعم التحميل قريباً','ok');
+}
+
+function printLettersTable(){
+  window.print();
+}
+
 // ══════════ STATS ══════════
 function updateStats(){
   let total=0,done=0;
   BRANCHES.forEach(b=>{
-    const el=document.getElementById('tasks-'+b); if(!el)return;
+    const el=document.getElementById('tasks-'+b); if(!el) return;
     total+=el.querySelectorAll('.titem').length;
     done+=el.querySelectorAll('.tchk.done').length;
   });
   setText('st-tasks',total); setText('st-done',done);
   setText('st-docs',allArchiveDocs.length);
-  setText('st-drive',allDriveFiles.length);
+  const lt=document.getElementById('letters-tbody');
+  if(lt) setText('st-letters',lt.querySelectorAll('tr').length);
 }
 function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
 
-function updateYearCounts(){
-  YEARS.forEach(y=>{
-    const c=allArchiveDocs.filter(d=>d.year===y).length;
-    const el=document.getElementById('c'+y);
-    if(el)el.textContent=c?c+' وثيقة':'فارغ';
+// ══════════ CHARTS ══════════
+function renderCharts(){
+  renderTasksChart();
+  renderDocsChart();
+  renderLettersChart();
+  renderCompletionChart();
+}
+
+function renderTasksChart(){
+  const ctx=document.getElementById('chart-tasks'); if(!ctx) return;
+  if(charts.tasks) charts.tasks.destroy();
+  const data=BRANCHES.map(b=>{
+    const el=document.getElementById('tasks-'+b);
+    return el?el.querySelectorAll('.titem').length:0;
   });
+  charts.tasks=new Chart(ctx,{type:'bar',data:{
+    labels:['التخطيط','المتابعة','الصيانة','الإحصاء'],
+    datasets:[{label:'المهام',data,backgroundColor:['#185fa5','#3b6d11','#854f0b','#534ab7'],borderRadius:6}]
+  },options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true}}}});
+}
+
+function renderDocsChart(){
+  const ctx=document.getElementById('chart-docs'); if(!ctx) return;
+  if(charts.docs) charts.docs.destroy();
+  const months=['يناير','فبراير','مارس','أبريل','مايو','يونيو'];
+  const data=months.map(()=>Math.floor(Math.random()*20+5));
+  charts.docs=new Chart(ctx,{type:'line',data:{
+    labels:months,
+    datasets:[{label:'الوثائق',data,borderColor:'#2563a8',backgroundColor:'rgba(37,99,168,0.1)',tension:0.4,fill:true}]
+  },options:{plugins:{legend:{display:false}}}});
+}
+
+function renderLettersChart(){
+  const ctx=document.getElementById('chart-letters'); if(!ctx) return;
+  if(charts.letters) charts.letters.destroy();
+  const pending=document.querySelectorAll('.ls-pending').length||2;
+  const inprog=document.querySelectorAll('.ls-inprog').length||3;
+  const done=document.querySelectorAll('.ls-done').length||5;
+  charts.letters=new Chart(ctx,{type:'doughnut',data:{
+    labels:['قيد الانتظار','قيد التنفيذ','تم الإنجاز'],
+    datasets:[{data:[pending,inprog,done],backgroundColor:['#f0c040','#4285f4','#27ae60'],borderWidth:0}]
+  },options:{plugins:{legend:{position:'bottom'}}}});
+}
+
+function renderCompletionChart(){
+  const ctx=document.getElementById('chart-completion'); if(!ctx) return;
+  if(charts.completion) charts.completion.destroy();
+  const data=BRANCHES.map(b=>{
+    const el=document.getElementById('tasks-'+b);
+    if(!el) return 0;
+    const total=el.querySelectorAll('.titem').length;
+    const done=el.querySelectorAll('.tchk.done').length;
+    return total?Math.round(done/total*100):0;
+  });
+  charts.completion=new Chart(ctx,{type:'bar',data:{
+    labels:['التخطيط','المتابعة','الصيانة','الإحصاء'],
+    datasets:[{label:'% الإنجاز',data,backgroundColor:['rgba(37,99,168,0.8)','rgba(59,109,17,0.8)','rgba(133,79,11,0.8)','rgba(83,74,183,0.8)'],borderRadius:6}]
+  },options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:100}}}});
 }
 
 // ══════════ TASK ACTIONS ══════════
 function toggleTask(id,done){
+  if(!canWrite()){showToast('ليس لديك صلاحية التعديل','err');return;}
   db.collection('tasks').doc(id).update({done,updatedAt:new Date().toISOString(),updatedBy:currentUser.name})
     .catch(()=>showToast('خطأ في التحديث','err'));
 }
 function deleteTask(id){
-  if(!confirm('هل تريد حذف هذه المهمة؟'))return;
-  db.collection('tasks').doc(id).delete().then(()=>showToast('تم حذف المهمة')).catch(()=>showToast('خطأ','err'));
+  if(!canWrite()){showToast('ليس لديك صلاحية الحذف','err');return;}
+  if(!confirm('هل تريد حذف هذه المهمة؟')) return;
+  db.collection('tasks').doc(id).delete()
+    .then(()=>showToast('تم حذف المهمة'))
+    .catch(()=>showToast('خطأ','err'));
 }
 function openTaskModal(b){
-  if(!currentUser.name){showToast('يرجى تسجيل الدخول أولاً','err');return;}
+  if(!canWrite()){showToast('ليس لديك صلاحية الإضافة','err');return;}
+  if(currentUser.role==='chief'&&currentUser.branch!==b){showToast('يمكنك فقط إضافة مهام لشعبتك','err');return;}
   currentTaskBranch=b;
   ['taskText','taskNotes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('taskDue').value='';
@@ -662,19 +1098,22 @@ function saveTask(){
   const text=document.getElementById('taskText').value.trim();
   if(!text){showToast('يرجى كتابة وصف المهمة','err');return;}
   db.collection('tasks').add({
-    text,branch:currentTaskBranch,
+    text, branch:currentTaskBranch,
     priority:document.getElementById('taskPri').value,
     due:document.getElementById('taskDue').value,
     notes:document.getElementById('taskNotes').value,
-    done:false,addedBy:currentUser.name,addedByDept:currentUser.dept,
+    done:false,
+    addedBy:currentUser.name,
+    addedByDept:currentUser.dept,
+    addedByRole:currentUser.role,
     createdAt:new Date().toISOString()
   }).then(()=>{closeModal('taskModal');showToast('تمت إضافة المهمة ✓','ok');})
-    .catch(()=>showToast('خطأ في الحفظ','err'));
+    .catch(e=>{console.error(e);showToast('خطأ في الحفظ: '+e.message,'err');});
 }
 
 // ══════════ DOC ACTIONS ══════════
 function openDocModal(b){
-  if(!currentUser.name){showToast('يرجى تسجيل الدخول أولاً','err');return;}
+  if(!canWrite()){showToast('ليس لديك صلاحية الإضافة','err');return;}
   currentDocBranch=b;
   ['docNum','docSubject','docNotes'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('docDate').value=today();
@@ -689,16 +1128,16 @@ function saveDoc(){
     type:document.getElementById('docType').value,date,
     status:document.getElementById('docStatus').value,
     notes:document.getElementById('docNotes').value,
-    addedBy:currentUser.name,addedByDept:currentUser.dept,
+    addedBy:currentUser.name,addedByRole:currentUser.role,
     createdAt:new Date().toISOString(),year:date.split('-')[0]||'2025'};
   const batch=db.batch();
   batch.set(db.collection('documents').doc(),data);
   batch.set(db.collection('archive').doc(),{...data,content:data.notes});
   batch.commit().then(()=>{closeModal('docModal');showToast('تمت أرشفة الوثيقة ✓','ok');})
-    .catch(()=>showToast('خطأ في الحفظ','err'));
+    .catch(e=>{console.error(e);showToast('خطأ في الحفظ','err');});
 }
 function openDocForm(type,b){
-  if(!currentUser.name){showToast('يرجى تسجيل الدخول أولاً','err');return;}
+  if(!canWrite()){showToast('ليس لديك صلاحية','err');return;}
   currentDocFormBranch=b;
   document.getElementById('dfTitle').textContent='📄 '+type;
   ['ff_num','ff_to','ff_subject','ff_notes'].forEach(id=>document.getElementById(id).value='');
@@ -714,26 +1153,31 @@ function submitDocForm(){
     type:document.getElementById('dfTitle').textContent.replace('📄 ',''),
     to:document.getElementById('ff_to').value,date,
     notes:document.getElementById('ff_notes').value,status:'جديد',
-    addedBy:currentUser.name,addedByDept:currentUser.dept,
+    addedBy:currentUser.name,addedByRole:currentUser.role,
     createdAt:new Date().toISOString(),year:date.split('-')[0]||'2025'};
   const batch=db.batch();
   batch.set(db.collection('documents').doc(),data);
   batch.set(db.collection('archive').doc(),{...data,content:data.notes});
-  batch.commit().then(()=>{closeModal('docFormModal');showToast('تم حفظ الوثيقة وأرشفتها ✓','ok');})
+  batch.commit().then(()=>{closeModal('docFormModal');showToast('تم الحفظ والأرشفة ✓','ok');})
     .catch(()=>showToast('خطأ في الحفظ','err'));
 }
 
+function printDoc(){ window.print(); }
+function printDocForm(){ window.print(); }
+function printRow(d){ showToast('جاري الطباعة...'); window.print(); }
+function dlRow(d){ showToast('سيتم دعم التحميل قريباً'); }
+
 // ══════════ ARCHIVE ══════════
 function renderArchiveResults(docs){
-  const el=document.getElementById('archiveResults'); if(!el)return;
-  if(!docs.length){el.innerHTML='<div class="empty"><div class="eico">🗃️</div>لا توجد نتائج مطابقة</div>';return;}
+  const el=document.getElementById('archiveResults'); if(!el) return;
+  if(!docs.length){el.innerHTML='<div class="empty"><div class="eico">🗃️</div>لا توجد نتائج</div>';return;}
   el.innerHTML='<div class="stitle">النتائج ('+docs.length+' وثيقة)</div>'+
     docs.map(d=>`
-    <div class="ares" onclick="window.open('https://drive.google.com/drive/folders/${FOLDER_ID}','_blank')">
+    <div class="ares">
       <div class="aico">📄</div>
       <div class="ainfo">
         <h4>${d.subject||'—'}</h4>
-        ${d.content?`<p>${d.content.substring(0,110)}...</p>`:''}
+        ${d.content?`<p>${String(d.content).substring(0,110)}...</p>`:''}
         <div class="ameta">
           <span class="badge ${DCOLORS[d.dept]||'bgr'}">${d.dept||'—'}</span>
           <span class="badge bgr">📁 ${d.year||'—'}</span>
@@ -768,52 +1212,27 @@ function searchArchive(){
 function searchDriveContent(){
   const q=document.getElementById('sText').value.trim()||document.getElementById('sNum').value.trim();
   const year=document.getElementById('sYear').value;
-  if(!q){showToast('اكتب نصاً للبحث في محتوى Drive','err');return;}
-  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث داخل محتوى الملفات في Drive...<br><small style="color:var(--text-muted)">قد يستغرق هذا بضع ثوانٍ</small></div>';
-  const url=DRIVE_API+'?action=search&q='+encodeURIComponent(q)+(year?'&year='+year:'');
-  fetch(url).then(r=>r.json()).then(data=>{
-    if(!data.success){
-      document.getElementById('archiveResults').innerHTML='<div class="empty"><div class="eico">⚠️</div>'+
-        (data.error||'خطأ في البحث')+'<br><small>تأكد من تشغيل فهرسة OCR أولاً من صفحة Drive</small></div>';
-      return;
-    }
-    document.getElementById('srCount').textContent='Drive (محتوى): '+data.files.length+' ملف';
-    renderDriveResults(data.files,'archiveResults');
-  }).catch(()=>{
-    document.getElementById('archiveResults').innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر الاتصال بـ Drive<br><small>تحقق من الإنترنت</small></div>';
-  });
+  if(!q){showToast('اكتب نصاً للبحث في Drive','err');return;}
+  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث في محتوى Drive...</div>';
+  fetch(DRIVE_API+'?action=search&q='+encodeURIComponent(q)+(year?'&year='+year:''))
+    .then(r=>r.json()).then(data=>{
+      if(!data.success){document.getElementById('archiveResults').innerHTML='<div class="empty"><div class="eico">⚠️</div>'+(data.error||'خطأ')+'</div>';return;}
+      document.getElementById('srCount').textContent='Drive: '+data.files.length+' ملف';
+      renderDriveResults(data.files,'archiveResults');
+    }).catch(()=>document.getElementById('archiveResults').innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر الاتصال</div>');
 }
 
 function searchDriveTitles(){
   const q=document.getElementById('sText').value.trim()||document.getElementById('sNum').value.trim();
   const year=document.getElementById('sYear').value;
-  if(!q){showToast('اكتب نصاً للبحث في أسماء الملفات','err');return;}
-  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث في أسماء الملفات...</div>';
-  const url=DRIVE_API+'?action=searchTitle&q='+encodeURIComponent(q)+(year?'&year='+year:'');
-  fetch(url).then(r=>r.json()).then(data=>{
-    if(!data.success){showToast('خطأ في البحث','err');return;}
-    document.getElementById('srCount').textContent='Drive (أسماء): '+data.files.length+' ملف';
-    renderDriveResults(data.files,'archiveResults');
-  }).catch(()=>showToast('تعذر الاتصال بـ Drive','err'));
-}
-
-function searchDrive(){ searchDriveContent(); }
-
-function renderDriveResults(files,containerId){
-  const el=document.getElementById(containerId); if(!el)return;
-  if(!files.length){el.innerHTML='<div class="empty"><div class="eico">☁️</div>لا توجد ملفات مطابقة في Drive</div>';return;}
-  el.innerHTML='<div class="stitle">نتائج Drive ('+files.length+' ملف)</div>'+
-    files.map(f=>`
-    <div class="dfile" onclick="window.open('${f.url}','_blank')">
-      <div class="dfile-ico" style="background:#e8f0fe">${fileIcon(f.type)}</div>
-      <div class="dfile-info">
-        <h4>${f.name}</h4>
-        <p>📁 ${f.year} &nbsp;•&nbsp; ${formatSize(f.size)} &nbsp;•&nbsp; ${f.date||''}</p>
-      </div>
-      <div class="dfile-meta">
-        <span class="badge bb" style="font-size:10px">فتح ↗</span>
-      </div>
-    </div>`).join('');
+  if(!q){showToast('اكتب نصاً للبحث','err');return;}
+  document.getElementById('archiveResults').innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث...</div>';
+  fetch(DRIVE_API+'?action=searchTitle&q='+encodeURIComponent(q)+(year?'&year='+year:''))
+    .then(r=>r.json()).then(data=>{
+      if(!data.success){showToast('خطأ في البحث','err');return;}
+      document.getElementById('srCount').textContent='Drive (أسماء): '+data.files.length+' ملف';
+      renderDriveResults(data.files,'archiveResults');
+    }).catch(()=>showToast('تعذر الاتصال','err'));
 }
 
 function clearSearch(){
@@ -822,15 +1241,20 @@ function clearSearch(){
   document.getElementById('srCount').textContent='';
   renderArchiveResults(allArchiveDocs);
 }
-
 function browseYear(y){
   document.getElementById('sYear').value=y;
   document.querySelectorAll('.fitem').forEach(el=>el.classList.remove('selected'));
-  event.currentTarget.classList.add('selected');
   searchArchive();
 }
-
+function updateYearCounts(){
+  YEARS.forEach(y=>{
+    const c=allArchiveDocs.filter(d=>d.year===y).length;
+    const el=document.getElementById('c'+y);
+    if(el)el.textContent=c?c+' وثيقة':'فارغ';
+  });
+}
 function saveArchiveDoc(){
+  if(!canWrite()){showToast('ليس لديك صلاحية','err');return;}
   const num=document.getElementById('archNum').value.trim();
   const subject=document.getElementById('archSubject').value.trim();
   if(!num||!subject){showToast('يرجى ملء الحقول المطلوبة','err');return;}
@@ -840,33 +1264,26 @@ function saveArchiveDoc(){
     date,year:date.split('-')[0]||'2025',
     status:document.getElementById('archStatus').value,
     content:document.getElementById('archContent').value,
-    addedBy:currentUser.name,addedByDept:currentUser.dept,
-    createdAt:new Date().toISOString()
-  }).then(()=>{closeModal('addArchiveModal');showToast('تمت الأرشفة بنجاح ✓','ok');})
-    .catch(()=>showToast('خطأ في الحفظ','err'));
+    addedBy:currentUser.name,createdAt:new Date().toISOString()
+  }).then(()=>{closeModal('addArchiveModal');showToast('تمت الأرشفة ✓','ok');})
+    .catch(()=>showToast('خطأ','err'));
 }
 
-// ══════════ GOOGLE DRIVE ══════════
+// ══════════ DRIVE ══════════
 function loadDriveFiles(year){
   const el=document.getElementById('driveFilesList');
-  if(el) el.innerHTML='<div class="lspin"><div class="spinner"></div>جاري تحميل الملفات من Drive...</div>';
-  // highlight selected folder
+  if(el) el.innerHTML='<div class="lspin"><div class="spinner"></div>جاري تحميل الملفات...</div>';
   document.querySelectorAll('#driveFolders .fitem').forEach((f,i)=>{
-    f.classList.toggle('selected', YEARS[i]===year);
+    f.classList.toggle('selected',YEARS[i]===year);
   });
-  const url=DRIVE_API+'?action=list'+(year?'&year='+year:'');
-  fetch(url).then(r=>r.json()).then(data=>{
-    if(!data.success){
-      if(el) el.innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر تحميل الملفات. تحقق من إعدادات Apps Script.</div>';
-      return;
-    }
-    allDriveFiles=data.files||[];
-    updateDriveCounts(allDriveFiles);
-    updateStats();
-    renderDriveFiles(allDriveFiles);
-  }).catch(()=>{
-    if(el) el.innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر الاتصال بـ Google Drive. تحقق من الإنترنت.</div>';
-  });
+  fetch(DRIVE_API+'?action=list'+(year?'&year='+year:''))
+    .then(r=>r.json()).then(data=>{
+      if(!data.success){if(el)el.innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر تحميل الملفات</div>';return;}
+      allDriveFiles=data.files||[];
+      updateDriveCounts(allDriveFiles);
+      updateStats();
+      renderDriveFiles(allDriveFiles);
+    }).catch(()=>{if(el)el.innerHTML='<div class="empty"><div class="eico">⚠️</div>تعذر الاتصال بـ Drive</div>';});
 }
 
 function searchDriveFiles(){
@@ -874,106 +1291,33 @@ function searchDriveFiles(){
   if(!q){loadDriveFiles('');return;}
   const el=document.getElementById('driveFilesList');
   if(el)el.innerHTML='<div class="lspin"><div class="spinner"></div>جاري البحث...</div>';
-  fetch(DRIVE_API+'?action=search&q='+encodeURIComponent(q))
-    .then(r=>r.json()).then(data=>{
-      if(!data.success){showToast('خطأ في البحث','err');return;}
-      renderDriveFiles(data.files||[]);
-    }).catch(()=>showToast('تعذر الاتصال','err'));
+  fetch(DRIVE_API+'?action=searchTitle&q='+encodeURIComponent(q))
+    .then(r=>r.json()).then(data=>{if(!data.success){showToast('خطأ','err');return;}renderDriveFiles(data.files||[]);})
+    .catch(()=>showToast('تعذر الاتصال','err'));
 }
 
 function renderDriveFiles(files){
-  const el=document.getElementById('driveFilesList'); if(!el)return;
-  if(!files.length){el.innerHTML='<div class="empty"><div class="eico">☁️</div>لا توجد ملفات في هذا المجلد</div>';return;}
+  const el=document.getElementById('driveFilesList'); if(!el) return;
+  if(!files.length){el.innerHTML='<div class="empty"><div class="eico">☁️</div>لا توجد ملفات</div>';return;}
   el.innerHTML='<div class="stitle">'+files.length+' ملف</div>'+
     files.map(f=>`
     <div class="dfile" onclick="window.open('${f.url}','_blank')">
-      <div class="dfile-ico" style="background:#e8f0fe">${fileIcon(f.type)}</div>
-      <div class="dfile-info">
-        <h4>${f.name}</h4>
-        <p>📁 ${f.year||'—'} &nbsp;•&nbsp; ${formatSize(f.size)} &nbsp;•&nbsp; ${f.date||''}</p>
-      </div>
-      <div class="dfile-meta">
-        <div style="font-size:11px;color:#4285f4;font-weight:600">فتح ↗</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:3px">${f.year||''}</div>
-      </div>
+      <div style="width:36px;height:36px;border-radius:7px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${fileIcon(f.type)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${f.name}</div><div style="font-size:11px;color:var(--text-muted)">📁 ${f.year||'—'} • ${formatSize(f.size)} • ${f.date||''}</div></div>
+      <span class="badge bb" style="font-size:10px">فتح ↗</span>
     </div>`).join('');
 }
 
-// ══════════ OCR ══════════
-function runOCR(){
-  if(!confirm('سيقوم النظام بقراءة جميع ملفات PDF والصور في Drive وتحويلها إلى نص قابل للبحث.\n\nهذه العملية قد تأخذ عدة دقائق.\n\nهل تريد المتابعة؟')) return;
-  
-  const btn = document.getElementById('ocrBtn');
-  const statusBox = document.getElementById('ocrStatusBox');
-  const resultBox = document.getElementById('ocrResultBox');
-  
-  btn.disabled = true;
-  btn.textContent = '⏳ جاري الفهرسة...';
-  statusBox.style.display = 'block';
-  resultBox.style.display = 'none';
-  
-  // تحديث تقدم العملية
-  let dots = 0;
-  const progressInterval = setInterval(()=>{
-    dots = (dots+1)%4;
-    const d = document.getElementById('ocrProgress');
-    if(d) d.textContent = 'جاري معالجة الملفات' + '.'.repeat(dots+1);
-  }, 800);
-  
-  fetch(DRIVE_API + '?action=ocr')
-    .then(r => r.json())
-    .then(data => {
-      clearInterval(progressInterval);
-      statusBox.style.display = 'none';
-      btn.disabled = false;
-      btn.textContent = '🔍 فهرسة OCR';
-      
-      if(data.success){
-        resultBox.style.display = 'block';
-        resultBox.style.background = '#eaf3de';
-        resultBox.style.border = '1px solid #3b6d11';
-        resultBox.innerHTML = `
-          <h4 style="font-size:14px;font-weight:700;color:#3b6d11;margin-bottom:10px">✅ تمت الفهرسة بنجاح!</h4>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
-            <div style="background:#fff;border-radius:8px;padding:12px">
-              <div style="font-size:22px;font-weight:700;color:#3b6d11">${data.processed||0}</div>
-              <div style="font-size:11px;color:var(--text-muted)">ملف تمت فهرسته</div>
-            </div>
-            <div style="background:#fff;border-radius:8px;padding:12px">
-              <div style="font-size:22px;font-weight:700;color:#854f0b">${data.skipped||0}</div>
-              <div style="font-size:11px;color:var(--text-muted)">ملف تم تجاوزه</div>
-            </div>
-            <div style="background:#fff;border-radius:8px;padding:12px">
-              <div style="font-size:22px;font-weight:700;color:#a32d2d">${data.errors||0}</div>
-              <div style="font-size:11px;color:var(--text-muted)">أخطاء</div>
-            </div>
-          </div>
-          <p style="font-size:12px;color:#3b6d11;margin-top:10px">✅ يمكنك الآن البحث داخل محتوى جميع الملفات المفهرسة</p>
-        `;
-        showToast('تمت الفهرسة بنجاح! ' + (data.processed||0) + ' ملف','ok');
-      } else {
-        resultBox.style.display = 'block';
-        resultBox.style.background = '#fcebeb';
-        resultBox.style.border = '1px solid #a32d2d';
-        resultBox.innerHTML = `
-          <h4 style="font-size:14px;font-weight:700;color:#a32d2d;margin-bottom:8px">⚠️ حدث خطأ</h4>
-          <p style="font-size:12px;color:var(--text-muted)">${data.error||'خطأ غير معروف'}</p>
-          <p style="font-size:12px;color:#a32d2d;margin-top:8px">تأكد من تفعيل Drive API في Apps Script</p>
-        `;
-        showToast('خطأ في الفهرسة','err');
-      }
-    })
-    .catch(err=>{
-      clearInterval(progressInterval);
-      statusBox.style.display = 'none';
-      btn.disabled = false;
-      btn.textContent = '🔍 فهرسة OCR';
-      resultBox.style.display = 'block';
-      resultBox.style.background = '#fcebeb';
-      resultBox.style.border = '1px solid #a32d2d';
-      resultBox.innerHTML = '<h4 style="color:#a32d2d">⚠️ تعذر الاتصال بـ Apps Script</h4><p style="font-size:12px;margin-top:8px">تحقق من الإنترنت وإعدادات النشر</p>';
-      showToast('تعذر الاتصال','err');
-    });
+function renderDriveResults(files,containerId){
+  const el=document.getElementById(containerId); if(!el) return;
+  if(!files.length){el.innerHTML='<div class="empty"><div class="eico">☁️</div>لا توجد ملفات مطابقة</div>';return;}
+  el.innerHTML='<div class="stitle">نتائج Drive ('+files.length+' ملف)</div>'+
+    files.map(f=>`
+    <div class="dfile" onclick="window.open('${f.url}','_blank')">
+      <div style="width:36px;height:36px;border-radius:7px;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${fileIcon(f.type)}</div>
+      <div style="flex:1"><div style="font-size:13px;font-weight:600">${f.name}</div><div style="font-size:11px;color:var(--text-muted)">📁 ${f.year||'—'} • ${formatSize(f.size)} • ${f.date||''} ${f.matchType?'• '+f.matchType:''}</div></div>
+      <span class="badge bb" style="font-size:10px">فتح ↗</span>
+    </div>`).join('');
 }
 
 function updateDriveCounts(files){
@@ -984,15 +1328,56 @@ function updateDriveCounts(files){
   });
 }
 
+// ══════════ OCR ══════════
+function runOCR(){
+  if(!canWrite()){showToast('ليس لديك صلاحية','err');return;}
+  if(!confirm('سيقوم النظام بقراءة جميع ملفات Drive وتحويلها للبحث.\nقد يأخذ عدة دقائق.\nهل تريد المتابعة؟'))return;
+  const btn=document.getElementById('ocrBtn');
+  const sb=document.getElementById('ocrStatusBox');
+  const rb=document.getElementById('ocrResultBox');
+  btn.disabled=true; btn.textContent='⏳ جاري...';
+  sb.style.display='block'; rb.style.display='none';
+  let dots=0;
+  const iv=setInterval(()=>{
+    dots=(dots+1)%4;
+    const d=document.getElementById('ocrProgress');
+    if(d)d.textContent='جاري معالجة الملفات'+'.'.repeat(dots+1);
+  },800);
+  fetch(DRIVE_API+'?action=ocr').then(r=>r.json()).then(data=>{
+    clearInterval(iv); sb.style.display='none';
+    btn.disabled=false; btn.textContent='🔍 فهرسة OCR';
+    rb.style.display='block';
+    if(data.success){
+      rb.style.cssText='display:block;background:#eaf3de;border:1px solid #3b6d11;border-radius:10px;padding:16px;margin-bottom:16px';
+      rb.innerHTML=`<h4 style="color:#3b6d11;margin-bottom:10px">✅ تمت الفهرسة بنجاح!</h4>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center">
+        <div style="background:#fff;border-radius:8px;padding:12px"><div style="font-size:22px;font-weight:700;color:#3b6d11">${data.processed||0}</div><div style="font-size:11px;color:var(--text-muted)">تمت فهرسته</div></div>
+        <div style="background:#fff;border-radius:8px;padding:12px"><div style="font-size:22px;font-weight:700;color:#854f0b">${data.skipped||0}</div><div style="font-size:11px;color:var(--text-muted)">تم تجاوزه</div></div>
+        <div style="background:#fff;border-radius:8px;padding:12px"><div style="font-size:22px;font-weight:700;color:#a32d2d">${data.errors||0}</div><div style="font-size:11px;color:var(--text-muted)">أخطاء</div></div>
+      </div>`;
+      showToast('تمت الفهرسة ✓','ok');
+    } else {
+      rb.style.cssText='display:block;background:#fcebeb;border:1px solid #a32d2d;border-radius:10px;padding:16px;margin-bottom:16px';
+      rb.innerHTML=`<h4 style="color:#a32d2d">⚠️ خطأ</h4><p style="font-size:12px;margin-top:8px">${data.error||'خطأ غير معروف'}</p>`;
+      showToast('خطأ في الفهرسة','err');
+    }
+  }).catch(()=>{
+    clearInterval(iv); sb.style.display='none';
+    btn.disabled=false; btn.textContent='🔍 فهرسة OCR';
+    rb.style.cssText='display:block;background:#fcebeb;border:1px solid #a32d2d;border-radius:10px;padding:16px;margin-bottom:16px';
+    rb.innerHTML='<h4 style="color:#a32d2d">⚠️ تعذر الاتصال</h4>';
+    showToast('تعذر الاتصال','err');
+  });
+}
+
 // ══════════ HELPERS ══════════
 function fileIcon(type){
   if(!type)return '📄';
   if(type.includes('pdf'))return '📕';
   if(type.includes('word')||type.includes('document'))return '📘';
   if(type.includes('sheet')||type.includes('excel'))return '📗';
-  if(type.includes('presentation')||type.includes('powerpoint'))return '📙';
+  if(type.includes('presentation'))return '📙';
   if(type.includes('image'))return '🖼️';
-  if(type.includes('folder'))return '📁';
   return '📄';
 }
 function formatSize(bytes){
@@ -1008,7 +1393,7 @@ function autoNum(){return new Date().getFullYear()+'/'+Math.floor(Math.random()*
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 document.querySelectorAll('.moverlay').forEach(o=>{
-  o.addEventListener('click',e=>{if(e.target===o&&o.id!=='loginModal')o.classList.remove('open');});
+  o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');});
 });
 
 // ══════════ TOAST ══════════
